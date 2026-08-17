@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="PrayerTimesManager.Tests/PrayerTimesManager.Tests.csproj" />
   <Project Path="PrayerTimesManager/PrayerTimesManager.csproj" />
 </Solution>
