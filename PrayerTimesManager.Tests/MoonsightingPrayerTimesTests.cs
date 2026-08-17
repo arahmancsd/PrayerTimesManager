@@ -68,4 +68,27 @@ public class MoonsightingPrayerTimesTests
 
         Assert.AreEqual("south", ms.hemisphere);
     }
+
+    [TestMethod]
+    public void GetDyy_IsIndependentOfTimeOfDay()
+    {
+        var morning = new Fajr(new DateTime(2024, 6, 15, 8, 0, 0), 51.5);
+        var evening = new Fajr(new DateTime(2024, 6, 15, 22, 0, 0), 51.5);
+
+        Assert.AreEqual(morning.GetMinutesBeforeSunrise(), evening.GetMinutesBeforeSunrise());
+    }
+
+    [TestMethod]
+    public void GetDyy_LeapYear_WrapsCorrectly()
+    {
+        var fajrSolstice = new Fajr(new DateTime(2024, 12, 21), 51.5);
+        var fajrNextDay = new Fajr(new DateTime(2024, 12, 22), 51.5);
+
+        var dyyField = typeof(MoonsightingPrayerTimes).GetField("dyy", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        int dyySolstice = (int)dyyField!.GetValue(fajrSolstice)!;
+        int dyyNextDay = (int)dyyField!.GetValue(fajrNextDay)!;
+
+        Assert.AreEqual(0, dyySolstice);
+        Assert.AreEqual(1, dyyNextDay);
+    }
 }

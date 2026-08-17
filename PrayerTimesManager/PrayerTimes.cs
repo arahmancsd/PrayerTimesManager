@@ -1,5 +1,7 @@
 ﻿using PrayersTimeManager.Enums;
 using System.Collections;
+using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace PrayersTimeManager;
 
@@ -138,18 +140,24 @@ public class PrayerTimes
 
     private double Evaluate(string value)
     {
-        if (double.TryParse(value, out double doubleVal))
-            return doubleVal;
+        if (string.IsNullOrWhiteSpace(value))
+            return 0;
 
-        string result = string.Empty;
-        for (int i = 0; i < value.Length; i++)
-        {
-            if (double.TryParse(value[i].ToString(), out doubleVal))
-            {
-                result += doubleVal;
-            }
-        }
-        return Convert.ToDouble(result);
+        // Strip the "min" suffix so "10 min" and "10.5 min" parse cleanly.
+        string cleaned = value.Replace("min", "", StringComparison.OrdinalIgnoreCase).Trim();
+
+        if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
+            return result;
+
+        if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.CurrentCulture, out result))
+            return result;
+
+        // Fallback: extract the leading signed decimal number.
+        Match match = Regex.Match(cleaned, @"^-?\d+(\.\d+)?");
+        if (match.Success && double.TryParse(match.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
+            return result;
+
+        return 0;
     }
 
     private double RiseSetAngle()
@@ -357,10 +365,13 @@ public class PrayerTimes
     private Hashtable AdjustHighLatitudes(Hashtable times)
     {
         double nightTime = TimeDiff((double)times[SUNSET], (double)times[SUNRISE]);
-        times[IMSAK] = AdjustHLTime((double)times[IMSAK], (double)times[SUNRISE], Evaluate(settings[IMSAK].ToString()), nightTime, "ccw");
+        if (!IsMin(settings[IMSAK].ToString()))
+            times[IMSAK] = AdjustHLTime((double)times[IMSAK], (double)times[SUNRISE], Evaluate(settings[IMSAK].ToString()), nightTime, "ccw");
         times[FAJR] = AdjustHLTime((double)times[FAJR], (double)times[SUNRISE], Evaluate(settings[FAJR].ToString()), nightTime, "ccw");
-        times[ISHA] = AdjustHLTime((double)times[ISHA], (double)times[SUNSET], Evaluate(settings[ISHA].ToString()), nightTime);
-        times[MAGHRIB] = AdjustHLTime((double)times[MAGHRIB], (double)times[SUNSET], Evaluate(settings[MAGHRIB].ToString()), nightTime);
+        if (!IsMin(settings[ISHA].ToString()))
+            times[ISHA] = AdjustHLTime((double)times[ISHA], (double)times[SUNSET], Evaluate(settings[ISHA].ToString()), nightTime);
+        if (!IsMin(settings[MAGHRIB].ToString()))
+            times[MAGHRIB] = AdjustHLTime((double)times[MAGHRIB], (double)times[SUNSET], Evaluate(settings[MAGHRIB].ToString()), nightTime);
         return times;
     }
 

@@ -1,6 +1,4 @@
-﻿using System.Globalization;
-
-namespace PrayersTimeManager;
+﻿namespace PrayersTimeManager;
 
 public class MoonsightingPrayerTimes
 {
@@ -25,28 +23,18 @@ public class MoonsightingPrayerTimes
         if (latitude > 0)
         { // Northern Hemisphere
             hemisphere = "north";
-            var dateString = string.Format("{0} {1}", DYY_NORTH_0 + "-" + year, DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture));
-            // dateDyyZero = DateTime.ParseExact(dateString, $"MM-dd-yyyy HH:mm:ss", CultureInfo.InvariantCulture);
-            dateDyyZero = DateTime.Parse(dateString, CultureInfo.InvariantCulture);
+            dateDyyZero = new DateTime(year, 12, 21, 12, 0, 0);
         }
         else
         { // Southern Hemisphere
             hemisphere = "south";
-            var dateString = string.Format("{0} {1}", DYY_SOUTH_0 + "-" + year, DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture));
-            dateDyyZero = DateTime.Parse(dateString, CultureInfo.InvariantCulture);
-            // dateDyyZero = DateTime.ParseExact(dateString, $"MM-dd-yyyy HH:mm:ss", CultureInfo.InvariantCulture);
+            dateDyyZero = new DateTime(year, 6, 21, 12, 0, 0);
         }
 
-        var diff = date.Subtract(dateDyyZero).Days;
+        int diff = date.Date.Subtract(dateDyyZero.Date).Days;
+        int daysInYear = DateTime.IsLeapYear(year) ? 366 : 365;
 
-        if (diff > 0)
-        {
-            dyy = diff;
-        }
-        else
-        {
-            dyy = 365 + diff;
-        }
+        dyy = diff >= 0 ? diff : daysInYear + diff;
 
         return dyy;
     }

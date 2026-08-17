@@ -265,4 +265,79 @@ public class PrayerTimesTests
         // JulianDate computes the JD at 0h UT, not 12h UT.
         Assert.AreEqual(2451544.5, jd, 1e-6);
     }
+
+    [DataTestMethod]
+    [DataRow("10 min", 10)]
+    [DataRow("90 min", 90)]
+    [DataRow("18.5", 18.5)]
+    [DataRow("18.5 min", 18.5)]
+    [DataRow("18.5°", 18.5)]
+    [DataRow("0 min", 0)]
+    [DataRow("", 0)]
+    [DataRow("   ", 0)]
+    public void Evaluate_ParsesVariousFormats(string input, double expected)
+    {
+        var prayerTimes = new PrayerTimes();
+        var method = typeof(PrayerTimes).GetMethod("Evaluate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        double actual = (double)method!.Invoke(prayerTimes, [input])!;
+
+        Assert.AreEqual(expected, actual, 1e-6);
+    }
+
+    [TestMethod]
+    public void GetTimes_Asr_IsBetweenDhuhrAndSunset()
+    {
+        var prayerTimes = new PrayerTimes();
+        Hashtable times = prayerTimes.GetTimes(
+            -33.8688, // Sydney
+            151.2093,
+            new DateTime(2024, 6, 15),
+            Utc,
+            format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double dhuhr = Convert.ToDouble(times[PrayerTimes.ZHUHR]);
+        double asr = Convert.ToDouble(times[PrayerTimes.ASR]);
+        double maghrib = Convert.ToDouble(times[PrayerTimes.MAGHRIB]);
+
+        Assert.IsTrue(dhuhr < asr && asr < maghrib, "Asr should occur between Dhuhr and Maghrib.");
+    }
+
+    [TestMethod]
+    public void GetTimes_MinuteBasedIsha_KeepsMinuteOffset()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MAKKAH);
+        Hashtable times = prayerTimes.GetTimes(
+            21.3891, // Mecca
+            39.8579,
+            new DateTime(2024, 6, 15),
+            Utc,
+            format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double maghrib = Convert.ToDouble(times[PrayerTimes.MAGHRIB]);
+        double isha = Convert.ToDouble(times[PrayerTimes.ISHA]);
+
+        Assert.IsTrue(isha > maghrib, "Isha should occur after Maghrib.");
+        Assert.AreEqual(1.5, isha - maghrib, 0.05, "Isha should be approximately 90 minutes after Maghrib.");
+    }
+
+    [TestMethod]
+    public void GetTimes_AngleBasedIsha_IsCappedAtHighLatitudes()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MWL);
+        Hashtable times = prayerTimes.GetTimes(
+            65.0, // High latitude in summer where -17° Isha is not reached naturally
+            0.0,
+            new DateTime(2024, 6, 15),
+            Utc,
+            latitudeAdjustmentMethod: LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_ANGLE,
+            format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double isha = Convert.ToDouble(times[PrayerTimes.ISHA]);
+        double fajr = Convert.ToDouble(times[PrayerTimes.FAJR]);
+        double sunset = Convert.ToDouble(times[PrayerTimes.SUNSET]);
+
+        Assert.IsFalse(double.IsNaN(isha), "High-latitude capped Isha should not be NaN.");
+        Assert.IsTrue(isha > sunset, "Isha should occur after sunset.");
+        Assert.IsTrue(isha < fajr + 24, "Isha should occur before the next day's Fajr.");
+    }
 }
