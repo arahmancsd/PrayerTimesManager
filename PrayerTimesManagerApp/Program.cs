@@ -1,0 +1,3 @@
+﻿using PrayerTimesManagerApp;
+
+PrayerTimesExamples.RunAllExamples();

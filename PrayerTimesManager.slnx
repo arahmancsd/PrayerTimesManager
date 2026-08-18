@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="PrayerTimesManager.Tests/PrayerTimesManager.Tests.csproj" />
   <Project Path="PrayerTimesManager/PrayerTimesManager.csproj" />
+  <Project Path="PrayerTimesManagerApp/PrayerTimesManagerApp.csproj" Id="a3536b13-3eea-4429-9754-cc58e1552efd" />
 </Solution>

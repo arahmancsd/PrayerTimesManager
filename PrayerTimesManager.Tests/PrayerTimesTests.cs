@@ -246,21 +246,33 @@ public class PrayerTimesTests
     [TestMethod]
     public void Now_ReturnsTimesForToday()
     {
-        var prayerTimes = new PrayerTimes();
-        Hashtable times = prayerTimes.Now(51.5074, -0.1278, Utc);
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
 
-        Assert.IsNotNull(times);
-        Assert.IsTrue(times.Count > 0);
+        Hashtable nowTimes = new PrayerTimes(timeProvider: fake).Now(
+            51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        Hashtable expected = new PrayerTimes(timeProvider: fake).GetTimes(
+            51.5074, -0.1278, today, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        Assert.IsNotNull(nowTimes);
+        Assert.IsTrue(nowTimes.Count > 0);
+        Assert.AreEqual(expected[PrayerTimes.FAJR], nowTimes[PrayerTimes.FAJR]);
     }
 
     [TestMethod]
     public void Tomorrow_ReturnsTimesForNextDay()
     {
-        var prayerTimes = new PrayerTimes();
-        Hashtable times = prayerTimes.Tomorrow(51.5074, -0.1278, Utc);
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
 
-        Assert.IsNotNull(times);
-        Assert.IsTrue(times.Count > 0);
+        Hashtable tomorrowTimes = new PrayerTimes(timeProvider: fake).Tomorrow(
+            51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        Hashtable expected = new PrayerTimes(timeProvider: fake).GetTimes(
+            51.5074, -0.1278, today.AddDays(1), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        Assert.IsNotNull(tomorrowTimes);
+        Assert.IsTrue(tomorrowTimes.Count > 0);
+        Assert.AreEqual(expected[PrayerTimes.FAJR], tomorrowTimes[PrayerTimes.FAJR]);
     }
 
     [TestMethod]
@@ -403,21 +415,33 @@ public class PrayerTimesTests
     [TestMethod]
     public void NowResult_ReturnsTimesForToday()
     {
-        var prayerTimes = new PrayerTimes();
-        PrayerTimesResult result = prayerTimes.NowResult(51.5074, -0.1278, Utc);
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
+
+        PrayerTimesResult result = new PrayerTimes(timeProvider: fake).NowResult(
+            51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        PrayerTimesResult expected = new PrayerTimes(timeProvider: fake).GetTimesResult(
+            51.5074, -0.1278, today, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Assert.IsNotNull(result);
         Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+        Assert.AreEqual(expected.Fajr, result.Fajr);
     }
 
     [TestMethod]
     public void TomorrowResult_ReturnsTimesForNextDay()
     {
-        var prayerTimes = new PrayerTimes();
-        PrayerTimesResult result = prayerTimes.TomorrowResult(51.5074, -0.1278, Utc);
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
+
+        PrayerTimesResult result = new PrayerTimes(timeProvider: fake).TomorrowResult(
+            51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        PrayerTimesResult expected = new PrayerTimes(timeProvider: fake).GetTimesResult(
+            51.5074, -0.1278, today.AddDays(1), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Assert.IsNotNull(result);
         Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+        Assert.AreEqual(expected.Fajr, result.Fajr);
     }
 
     [TestMethod]
@@ -463,24 +487,32 @@ public class PrayerTimesTests
     [TestMethod]
     public void Now_WithInputsRecord_ReturnsTimesForToday()
     {
-        var prayerTimes = new PrayerTimes();
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
         var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
 
-        Hashtable result = prayerTimes.Now(inputs);
+        Hashtable result = new PrayerTimes(timeProvider: fake).Now(inputs);
+        Hashtable expected = new PrayerTimes(timeProvider: fake).GetTimes(
+            51.5074, -0.1278, today, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Assert.IsNotNull(result);
         Assert.IsTrue(result.ContainsKey(PrayerTimes.FAJR));
+        Assert.AreEqual(expected[PrayerTimes.FAJR], result[PrayerTimes.FAJR]);
     }
 
     [TestMethod]
     public void NowResult_WithInputsRecord_ReturnsTimesForToday()
     {
-        var prayerTimes = new PrayerTimes();
+        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
+        var fake = new FakeTimeProvider(today.ToUniversalTime());
         var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
 
-        PrayerTimesResult result = prayerTimes.NowResult(inputs);
+        PrayerTimesResult result = new PrayerTimes(timeProvider: fake).NowResult(inputs);
+        PrayerTimesResult expected = new PrayerTimes(timeProvider: fake).GetTimesResult(
+            51.5074, -0.1278, today, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Assert.IsNotNull(result);
         Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+        Assert.AreEqual(expected.Fajr, result.Fajr);
     }
 }
