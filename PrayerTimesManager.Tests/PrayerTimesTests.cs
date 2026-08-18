@@ -218,7 +218,7 @@ public class PrayerTimesTests
         var prayerTimes = new PrayerTimes();
         prayerTimes.SetCustomMethod(PrayerCalculationMethod.Custom);
 
-        var methodField = typeof(PrayerTimes).GetField("method", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var methodField = typeof(PrayerTimes).GetField("_method", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         var currentMethod = (PrayerCalculationMethods)methodField!.GetValue(prayerTimes)!;
 
         Assert.AreEqual(PrayerCalculationMethods.CUSTOM, currentMethod);

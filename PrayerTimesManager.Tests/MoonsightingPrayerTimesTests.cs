@@ -82,7 +82,7 @@ public class MoonsightingPrayerTimesTests
         var fajrSolstice = new Fajr(new DateTime(2024, 12, 21), 51.5);
         var fajrNextDay = new Fajr(new DateTime(2024, 12, 22), 51.5);
 
-        var dyyField = typeof(MoonsightingPrayerTimes).GetField("dyy", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var dyyField = typeof(MoonsightingPrayerTimes).GetField("_dyy", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         int dyySolstice = (int)dyyField!.GetValue(fajrSolstice)!;
         int dyyNextDay = (int)dyyField!.GetValue(fajrNextDay)!;
 
