@@ -1,6 +1,6 @@
-﻿namespace PrayersTimeManager;
+﻿namespace PrayerTimesManager;
 
-public class DMath
+public sealed class DMath
 {
     public static double Dtr(double d)
     {

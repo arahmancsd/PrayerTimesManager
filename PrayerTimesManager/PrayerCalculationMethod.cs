@@ -1,7 +1,7 @@
-﻿using PrayersTimeManager.Enums;
+﻿using PrayerTimesManager.Enums;
 using System.Collections;
 
-namespace PrayersTimeManager;
+namespace PrayerTimesManager;
 
 public sealed record PrayerCalculationMethod
 {

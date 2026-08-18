@@ -1,17 +1,11 @@
-﻿using PrayersTimeManager.Enums;
+﻿using PrayerTimesManager.Enums;
 using System.Collections;
 
-namespace PrayersTimeManager;
+namespace PrayerTimesManager;
 
 public sealed class PrayerCalculation
 {
-    private readonly Hashtable paramMethods = new();
-
-    public PrayerCalculation()
-    {
-        //paramMethods[PrayerTimes.FAJR] = 15;
-        //paramMethods[PrayerTimes.ISHA] = 15;
-    }
+    private readonly Hashtable paramMethods = [];
 
     public void SetFajrAngle(double angle)
     {

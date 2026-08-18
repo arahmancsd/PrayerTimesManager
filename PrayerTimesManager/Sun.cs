@@ -1,4 +1,4 @@
-﻿namespace PrayersTimeManager;
+﻿namespace PrayerTimesManager;
 
 public sealed class Sun
 {

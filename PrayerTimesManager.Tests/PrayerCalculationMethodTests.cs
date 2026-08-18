@@ -1,4 +1,4 @@
-using PrayersTimeManager;
+using PrayerTimesManager.Enums;
 
 namespace PrayerTimesManager.Tests;
 
@@ -45,8 +45,8 @@ public class PrayerCalculationMethodTests
     public void PrayerCalculations_ContainsAllExpectedMethods()
     {
         var calculations = PrayerCalculation.PrayerCalculations;
-        var expectedMethods = Enum.GetValues<PrayersTimeManager.Enums.PrayerCalculationMethods>()
-            .Where(m => m != PrayersTimeManager.Enums.PrayerCalculationMethods.DEFAULT);
+        var expectedMethods = Enum.GetValues<PrayerCalculationMethods>()
+            .Where(m => m != PrayerCalculationMethods.DEFAULT);
 
         foreach (var method in expectedMethods)
         {
@@ -60,6 +60,6 @@ public class PrayerCalculationMethodTests
     {
         var codes = PrayerCalculation.PrayerCalculationsCodes;
 
-        Assert.AreEqual((short)PrayersTimeManager.Enums.PrayerCalculationMethods.MWL, codes[(short)PrayersTimeManager.Enums.PrayerCalculationMethods.MWL]);
+        Assert.AreEqual((short)PrayerCalculationMethods.MWL, codes[(short)PrayerCalculationMethods.MWL]);
     }
 }

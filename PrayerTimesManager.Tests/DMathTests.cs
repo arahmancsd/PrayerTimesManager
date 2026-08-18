@@ -1,5 +1,3 @@
-using PrayersTimeManager;
-
 namespace PrayerTimesManager.Tests;
 
 [TestClass]

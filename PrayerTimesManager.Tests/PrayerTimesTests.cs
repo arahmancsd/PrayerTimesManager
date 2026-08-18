@@ -1,6 +1,7 @@
 using System.Collections;
 using PrayersTimeManager;
 using PrayersTimeManager.Enums;
+using PrayerTimesManager.Enums;
 
 namespace PrayerTimesManager.Tests;
 
@@ -14,8 +15,8 @@ public class PrayerTimesTests
     {
         var prayerTimes = new PrayerTimes();
 
-        Assert.IsNotNull(prayerTimes.prayerCalculationMethods);
-        Assert.IsNotNull(prayerTimes.prayerCalculationMethodCodes);
+        Assert.IsNotNull(prayerTimes.CalculationMethodList);
+        Assert.IsNotNull(prayerTimes.CalculationMethodCodeList);
     }
 
     [TestMethod]
@@ -101,6 +102,23 @@ public class PrayerTimesTests
 
         string? fajr = times[PrayerTimes.FAJR]?.ToString();
         Assert.IsTrue(double.TryParse(fajr, out _));
+    }
+
+    [TestMethod]
+    public void GetTimes_Iso8601Format_ReturnsTimeWithSeconds()
+    {
+        var prayerTimes = new PrayerTimes();
+        Hashtable times = prayerTimes.GetTimes(
+            51.5074,
+            -0.1278,
+            new DateTime(2024, 6, 15),
+            Utc,
+            format: TimeFormats.TIME_FORMAT_ISO8601);
+
+        string? fajr = times[PrayerTimes.FAJR]?.ToString();
+        Assert.IsFalse(string.IsNullOrEmpty(fajr));
+        Assert.IsTrue(fajr!.Contains(':', StringComparison.Ordinal));
+        Assert.AreEqual(3, fajr.Split(':').Length, "ISO8601 time should contain hours, minutes and seconds separated by colons.");
     }
 
     [TestMethod]
@@ -210,7 +228,7 @@ public class PrayerTimesTests
     public void GetTimes_WithTuneOffsets_AppliesOffset()
     {
         var prayerTimes = new PrayerTimes();
-        prayerTimes.SetTuneTimeOffset(new Hashtable
+        prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
         {
             [PrayerTimes.FAJR] = 10
         });
@@ -277,9 +295,8 @@ public class PrayerTimesTests
     [DataRow("   ", 0)]
     public void Evaluate_ParsesVariousFormats(string input, double expected)
     {
-        var prayerTimes = new PrayerTimes();
-        var method = typeof(PrayerTimes).GetMethod("Evaluate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        double actual = (double)method!.Invoke(prayerTimes, [input])!;
+        var method = typeof(PrayerTimes).GetMethod("Evaluate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        double actual = (double)method!.Invoke(null, [input])!;
 
         Assert.AreEqual(expected, actual, 1e-6);
     }
@@ -339,5 +356,131 @@ public class PrayerTimesTests
         Assert.IsFalse(double.IsNaN(isha), "High-latitude capped Isha should not be NaN.");
         Assert.IsTrue(isha > sunset, "Isha should occur after sunset.");
         Assert.IsTrue(isha < fajr + 24, "Isha should occur before the next day's Fajr.");
+    }
+
+    [TestMethod]
+    public void GetTimesResult_ReturnsAllPrayerKeysAsProperties()
+    {
+        var prayerTimes = new PrayerTimes();
+        PrayerTimesResult result = prayerTimes.GetTimesResult(
+            51.5074, -0.1278, new DateTime(2024, 6, 15), Utc);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(string.IsNullOrEmpty(result.Imsak));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Sunrise));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Dhuhr));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Asr));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Sunset));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Maghrib));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Isha));
+        Assert.IsFalse(string.IsNullOrEmpty(result.Midnight));
+    }
+
+    [TestMethod]
+    public void GetTimesResult_FloatFormat_MatchesHashtableOutput()
+    {
+        var prayerTimes = new PrayerTimes();
+        DateTime date = new(2024, 6, 15);
+
+        Hashtable hashtable = prayerTimes.GetTimes(
+            51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        PrayerTimesResult result = prayerTimes.GetTimesResult(
+            51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        Assert.AreEqual(hashtable[PrayerTimes.IMSAK], result.Imsak);
+        Assert.AreEqual(hashtable[PrayerTimes.FAJR], result.Fajr);
+        Assert.AreEqual(hashtable[PrayerTimes.SUNRISE], result.Sunrise);
+        Assert.AreEqual(hashtable[PrayerTimes.ZHUHR], result.Dhuhr);
+        Assert.AreEqual(hashtable[PrayerTimes.ASR], result.Asr);
+        Assert.AreEqual(hashtable[PrayerTimes.SUNSET], result.Sunset);
+        Assert.AreEqual(hashtable[PrayerTimes.MAGHRIB], result.Maghrib);
+        Assert.AreEqual(hashtable[PrayerTimes.ISHA], result.Isha);
+        Assert.AreEqual(hashtable[PrayerTimes.MIDNIGHT], result.Midnight);
+    }
+
+    [TestMethod]
+    public void NowResult_ReturnsTimesForToday()
+    {
+        var prayerTimes = new PrayerTimes();
+        PrayerTimesResult result = prayerTimes.NowResult(51.5074, -0.1278, Utc);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+    }
+
+    [TestMethod]
+    public void TomorrowResult_ReturnsTimesForNextDay()
+    {
+        var prayerTimes = new PrayerTimes();
+        PrayerTimesResult result = prayerTimes.TomorrowResult(51.5074, -0.1278, Utc);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
+    }
+
+    [TestMethod]
+    public void GetTimes_WithInputsRecord_MatchesExpandedParameters()
+    {
+        var prayerTimes = new PrayerTimes();
+        DateTime date = new(2024, 6, 15);
+        var inputs = new PrayerTimesInputs(
+            Latitude: 51.5074,
+            Longitude: -0.1278,
+            DateTime: date,
+            TimeZone: Utc,
+            Format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        Hashtable expanded = prayerTimes.GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        Hashtable fromRecord = prayerTimes.GetTimes(inputs);
+
+        Assert.AreEqual(expanded[PrayerTimes.FAJR], fromRecord[PrayerTimes.FAJR]);
+        Assert.AreEqual(expanded[PrayerTimes.ZHUHR], fromRecord[PrayerTimes.ZHUHR]);
+        Assert.AreEqual(expanded[PrayerTimes.MAGHRIB], fromRecord[PrayerTimes.MAGHRIB]);
+    }
+
+    [TestMethod]
+    public void GetTimesResult_WithInputsRecord_MatchesExpandedParameters()
+    {
+        var prayerTimes = new PrayerTimes();
+        DateTime date = new(2024, 6, 15);
+        var inputs = new PrayerTimesInputs(
+            Latitude: 51.5074,
+            Longitude: -0.1278,
+            DateTime: date,
+            TimeZone: Utc,
+            Format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        PrayerTimesResult expanded = prayerTimes.GetTimesResult(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        PrayerTimesResult fromRecord = prayerTimes.GetTimesResult(inputs);
+
+        Assert.AreEqual(expanded.Fajr, fromRecord.Fajr);
+        Assert.AreEqual(expanded.Dhuhr, fromRecord.Dhuhr);
+        Assert.AreEqual(expanded.Maghrib, fromRecord.Maghrib);
+    }
+
+    [TestMethod]
+    public void Now_WithInputsRecord_ReturnsTimesForToday()
+    {
+        var prayerTimes = new PrayerTimes();
+        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
+
+        Hashtable result = prayerTimes.Now(inputs);
+
+        Assert.IsNotNull(result);
+        Assert.IsTrue(result.ContainsKey(PrayerTimes.FAJR));
+    }
+
+    [TestMethod]
+    public void NowResult_WithInputsRecord_ReturnsTimesForToday()
+    {
+        var prayerTimes = new PrayerTimes();
+        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
+
+        PrayerTimesResult result = prayerTimes.NowResult(inputs);
+
+        Assert.IsNotNull(result);
+        Assert.IsFalse(string.IsNullOrEmpty(result.Fajr));
     }
 }

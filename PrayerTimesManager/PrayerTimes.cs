@@ -1,11 +1,12 @@
 ﻿using PrayersTimeManager.Enums;
+using PrayerTimesManager.Enums;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace PrayersTimeManager;
+namespace PrayerTimesManager;
 
-public class PrayerTimes
+public partial class PrayerTimes
 {
     public const string IMSAK = "Imsak";
     public const string FAJR = "Fajr";
@@ -17,64 +18,57 @@ public class PrayerTimes
     public const string ISHA = "Isha";
     public const string MIDNIGHT = "Midnight";
 
-    public const string TIME_FORMAT_24H = "24h"; // 24-hour format
-    public const string TIME_FORMAT_12H = "12h"; // 12-hour format
-    public const string TIME_FORMAT_12hNS = "12hNS"; // 12-hour format with no suffix
-    public const string TIME_FORMAT_FLOAT = "Float"; // floating point number
-    public const string TIME_FORMAT_ISO8601 = "iso8601";
-
     public const string INVALID_TIME = "-----";
-    //public static string[] FivePrayersTimeName = { "Fajr", "Dhuhr", "Asr", "Maghrib", "Isha" };
-    //public static readonly string[] hijriMonthsName = new string[] { "Muharram", "Safar", "Rabiul-Awwal", "Rabi-uthani", "Jumadi-ul-Awwal", "Jumadi-uthani", "Rajab", "Sha’ban", "Ramadan", "Shawwal", "Zhul-Q’ada", "Zhul-Hijja" };
 
-    public Dictionary<string, PrayerCalculationMethod> prayerCalculationMethods;
-    public Hashtable prayerCalculationMethodCodes;
+    public Dictionary<string, PrayerCalculationMethod> CalculationMethodList { get; private set; }
+    public Hashtable CalculationMethodCodeList { get; private set; }
+    
+    private const string MinSuffix = "min";
+    private const string ClockwiseDirection = "ccw";
 
-    private DateTime date;
-    private PrayerCalculationMethods method = PrayerCalculationMethods.MWL;
-    private Schools school = Schools.DEFAULT;
-    private MidnightModes midnightMode = MidnightModes.DEFAULT;
+    private DateTime _date;
+    private PrayerCalculationMethods _method = PrayerCalculationMethods.MWL;
+    private Schools _school = Schools.DEFAULT;
+    private MidnightModes _midnightMode = MidnightModes.DEFAULT;
+    private LatitudeAdjustmentMethods _latitudeAdjustmentMethod;
+    private Shafaq _shafaq = Isha.shafaq; // Only valid for METHOD_MOONSIGHTING
+    private TimeFormats _timeFormat;
+    private double _latitude;
+    private double _longitude;
+    private double _elevation;
+    private readonly int? _asrShadowFactor;
+    private Dictionary<string, string> _settings;
+    private double _timeZone;
+    private Dictionary<string, double> _tuneTimesOffset;
 
-    private LatitudeAdjustmentMethods latitudeAdjustmentMethod;
-    private TimeFormats timeFormat;
-    private Shafaq shafaq = Isha.shafaq; // Only valid for METHOD_MOONSIGHTING
-
-    private double latitude;
-    private double longitude;
-
-    private double elevation;
-    private int? asrShadowFactor;
-
-    private Hashtable settings;
-    //private int timeZone;   // time-zone
-    private double timeZone;
-    private Hashtable tuneTimesOffset;
-
-    public PrayerTimes(PrayerCalculationMethods method = PrayerCalculationMethods.DEFAULT, Schools school = Schools.DEFAULT, int? asrShadowFactor = null)
+    public PrayerTimes(
+        PrayerCalculationMethods method = PrayerCalculationMethods.DEFAULT, 
+        Schools school = Schools.DEFAULT, 
+        int? asrShadowFactor = null)
     {
         SetPrayerCalculationMethods();
 
-        this.method = method;
-        this.school = school;
-        this.asrShadowFactor = asrShadowFactor;
+        _method = method;
+        _school = school;
+        _asrShadowFactor = asrShadowFactor;
 
         LoadSettings();
     }
 
     private void LoadSettings()
     {
-        settings = new Hashtable
+        _settings = new Dictionary<string, string>
         {
-            [IMSAK] = prayerCalculationMethods[method.ToString()]?.Param[IMSAK] ?? "10 min",
-            [FAJR] = prayerCalculationMethods[method.ToString()]?.Param[FAJR] ?? "0",
-            [ZHUHR] = prayerCalculationMethods[method.ToString()]?.Param[ZHUHR] ?? "0 min",
-            [ISHA] = prayerCalculationMethods[method.ToString()]?.Param[ISHA] ?? "0",
-            [MAGHRIB] = prayerCalculationMethods[method.ToString()]?.Param[MAGHRIB] ?? "0 min",
+            [IMSAK] = CalculationMethodList[_method.ToString()]?.Param[IMSAK]?.ToString() ?? "10 min",
+            [FAJR] = CalculationMethodList[_method.ToString()]?.Param[FAJR]?.ToString() ?? "0",
+            [ZHUHR] = CalculationMethodList[_method.ToString()]?.Param[ZHUHR]?.ToString() ?? "0 min",
+            [ISHA] = CalculationMethodList[_method.ToString()]?.Param[ISHA]?.ToString() ?? "0",
+            [MAGHRIB] = CalculationMethodList[_method.ToString()]?.Param[MAGHRIB]?.ToString() ?? "0 min",
         };
 
-        var isMidnight = prayerCalculationMethods[method.ToString()]?.Param[MIDNIGHT] != null;
+        var isMidnight = CalculationMethodList[_method.ToString()]?.Param[MIDNIGHT] != null;
 
-        if (isMidnight && (MidnightModes)prayerCalculationMethods[method.ToString()].Param[MIDNIGHT] == MidnightModes.JAFARI)
+        if (isMidnight && (MidnightModes)CalculationMethodList[_method.ToString()].Param[MIDNIGHT] == MidnightModes.JAFARI)
         {
             SetMidnightMode(MidnightModes.JAFARI);
         }
@@ -86,74 +80,71 @@ public class PrayerTimes
 
     private void SetPrayerCalculationMethods()
     {
-        prayerCalculationMethods = PrayerCalculation.PrayerCalculations;
-        prayerCalculationMethodCodes = PrayerCalculation.PrayerCalculationsCodes;
+        CalculationMethodList = PrayerCalculation.PrayerCalculations;
+        CalculationMethodCodeList = PrayerCalculation.PrayerCalculationsCodes;
     }
 
     public void SetMethod(PrayerCalculationMethods method = PrayerCalculationMethods.MWL)
     {
-        this.method = method;
+        _method = method;
         LoadSettings();
     }
 
     public void SetCustomMethod(PrayerCalculationMethod method)
     {
         SetMethod(PrayerCalculationMethods.CUSTOM);
-        prayerCalculationMethods[this.method.ToString()] = method;
+        CalculationMethodList[_method.ToString()] = method;
         LoadSettings();
     }
 
-    public void SetTuneTimeOffset(Hashtable offset)
+    public void SetTuneTimeOffset(Dictionary<string, double> offset)
     {
-        this.tuneTimesOffset = offset;
+        _tuneTimesOffset = offset;
     }
 
     public void SetShafaq(Shafaq shafaq)
     {
-        this.shafaq = shafaq;
+        _shafaq = shafaq;
     }
 
     public void SetSchool(Schools school)
     {
-        this.SetAsrJuristicMethod(school);
+        SetAsrJuristicMethod(school);
     }
 
     public void SetAsrJuristicMethod(Schools school)
     {
-        this.school = school;
+        _school = school;
     }
 
     public void SetMidnightMode(MidnightModes mode = MidnightModes.STANDARD)
     {
-        midnightMode = mode;
+        _midnightMode = mode;
     }
 
     public void SetTimeFormat(TimeFormats format = TimeFormats.DEFAULT)
     {
-        this.timeFormat = format;
+        _timeFormat = format;
     }
 
     public void SetLatitudeAdjustmentMethod(LatitudeAdjustmentMethods method = LatitudeAdjustmentMethods.DEFAULT)
     {
-        this.latitudeAdjustmentMethod = method;
+        _latitudeAdjustmentMethod = method;
     }
 
-    private double Evaluate(string value)
+    private static double Evaluate(string value)
     {
         if (string.IsNullOrWhiteSpace(value))
             return 0;
 
         // Strip the "min" suffix so "10 min" and "10.5 min" parse cleanly.
-        string cleaned = value.Replace("min", "", StringComparison.OrdinalIgnoreCase).Trim();
+        string cleaned = value.Replace(MinSuffix, "", StringComparison.OrdinalIgnoreCase).Trim();
 
         if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.InvariantCulture, out double result))
             return result;
 
-        if (double.TryParse(cleaned, NumberStyles.Any, CultureInfo.CurrentCulture, out result))
-            return result;
-
-        // Fallback: extract the leading signed decimal number.
-        Match match = Regex.Match(cleaned, @"^-?\d+(\.\d+)?");
+        // Fallback: extract the leading signed decimal number (e.g. "18.5°" -> 18.5).
+        Match match = EvaulateRegEx().Match(cleaned);
         if (match.Success && double.TryParse(match.Value, NumberStyles.Any, CultureInfo.InvariantCulture, out result))
             return result;
 
@@ -162,21 +153,15 @@ public class PrayerTimes
 
     private double RiseSetAngle()
     {
-        double angle = 0.0347 * Math.Sqrt(elevation); // an approximation
+        double angle = 0.0347 * Math.Sqrt(_elevation); // an approximation
         return 0.833 + angle;
     }
 
     private int AsrFactor()
     {
-        if (asrShadowFactor.HasValue)
-            return asrShadowFactor.Value;
-        return (short)school;
-        //if (school == School.STANDARD)
-        //    return 1;
-        //else if (school == School.HANAFI)
-        //    return 2;
-        //else
-        //    return 0;
+        if (_asrShadowFactor.HasValue)
+            return _asrShadowFactor.Value;
+        return (int)_school;
     }
 
     public static double ToJulianDate(DateTime date)
@@ -185,42 +170,64 @@ public class PrayerTimes
     }
 
     public Hashtable Now(
-        double latitude, 
+        double latitude,
         double longitude,
-        TimeZoneInfo? timeZone = null, 
+        TimeZoneInfo? timeZone = null,
         double? elevation = null,
-        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT, 
-        MidnightModes midnightMode = MidnightModes.DEFAULT, 
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
         return GetTimes(latitude, longitude, DateTime.Now, timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    public Hashtable Now(PrayerTimesInputs inputs) =>
+        GetTimes(
+            inputs.Latitude,
+            inputs.Longitude,
+            DateTime.Now,
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
     public Hashtable Tomorrow(
-        double latitude, 
+        double latitude,
         double longitude,
-        TimeZoneInfo? timeZone = null, 
+        TimeZoneInfo? timeZone = null,
         double? elevation = null,
-        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT, 
-        MidnightModes midnightMode = MidnightModes.DEFAULT, 
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
         return GetTimes(latitude, longitude, DateTime.Now.AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    public Hashtable Tomorrow(PrayerTimesInputs inputs) =>
+        GetTimes(
+            inputs.Latitude,
+            inputs.Longitude,
+            DateTime.Now.AddDays(1),
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
     public Hashtable GetTimes(
-        double latitude, 
-        double longitude, 
+        double latitude,
+        double longitude,
         DateTime? dateTime = null,
         TimeZoneInfo? timeZone = null,
         double? elevation = null,
-        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT, 
-        MidnightModes midnightMode = MidnightModes.DEFAULT, 
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
-        this.latitude = latitude;
-        this.longitude = longitude;
-        this.elevation = elevation == null ? 0 : 1 * elevation.Value;
+        _latitude = latitude;
+        _longitude = longitude;
+        _elevation = elevation == null ? 0 : 1 * elevation.Value;
 
         SetTimeFormat(format);
         SetLatitudeAdjustmentMethod(latitudeAdjustmentMethod);
@@ -232,14 +239,109 @@ public class PrayerTimes
         return ComputeTimes();
     }
 
+    public Hashtable GetTimes(PrayerTimesInputs inputs) =>
+        GetTimes(
+            inputs.Latitude,
+            inputs.Longitude,
+            inputs.DateTime,
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
+    public PrayerTimesResult GetTimesResult(
+        double latitude,
+        double longitude,
+        DateTime? dateTime = null,
+        TimeZoneInfo? timeZone = null,
+        double? elevation = null,
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
+        TimeFormats format = TimeFormats.DEFAULT)
+    {
+        Hashtable times = GetTimes(latitude, longitude, dateTime, timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+        return ToPrayerTimesResult(times);
+    }
+
+    public PrayerTimesResult GetTimesResult(PrayerTimesInputs inputs) =>
+        GetTimesResult(
+            inputs.Latitude,
+            inputs.Longitude,
+            inputs.DateTime,
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
+    public PrayerTimesResult NowResult(
+        double latitude,
+        double longitude,
+        TimeZoneInfo? timeZone = null,
+        double? elevation = null,
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
+        TimeFormats format = TimeFormats.DEFAULT)
+    {
+        return GetTimesResult(latitude, longitude, DateTime.Now, timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+    }
+
+    public PrayerTimesResult NowResult(PrayerTimesInputs inputs) =>
+        GetTimesResult(
+            inputs.Latitude,
+            inputs.Longitude,
+            DateTime.Now,
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
+    public PrayerTimesResult TomorrowResult(
+        double latitude,
+        double longitude,
+        TimeZoneInfo? timeZone = null,
+        double? elevation = null,
+        LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
+        MidnightModes midnightMode = MidnightModes.DEFAULT,
+        TimeFormats format = TimeFormats.DEFAULT)
+    {
+        return GetTimesResult(latitude, longitude, DateTime.Now.AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+    }
+
+    public PrayerTimesResult TomorrowResult(PrayerTimesInputs inputs) =>
+        GetTimesResult(
+            inputs.Latitude,
+            inputs.Longitude,
+            DateTime.Now.AddDays(1),
+            inputs.TimeZone,
+            inputs.Elevation,
+            inputs.LatitudeAdjustmentMethod,
+            inputs.MidnightMode,
+            inputs.Format);
+
+    private PrayerTimesResult ToPrayerTimesResult(Hashtable times) => new(
+        times[IMSAK]?.ToString() ?? INVALID_TIME,
+        times[FAJR]?.ToString() ?? INVALID_TIME,
+        times[SUNRISE]?.ToString() ?? INVALID_TIME,
+        times[ZHUHR]?.ToString() ?? INVALID_TIME,
+        times[ASR]?.ToString() ?? INVALID_TIME,
+        times[SUNSET]?.ToString() ?? INVALID_TIME,
+        times[MAGHRIB]?.ToString() ?? INVALID_TIME,
+        times[ISHA]?.ToString() ?? INVALID_TIME,
+        times[MIDNIGHT]?.ToString() ?? INVALID_TIME);
+
     private void SetDate(DateTime? date)
     {
-        this.date = date ?? DateTime.Now;
+        _date = date ?? DateTime.Now;
     }
 
     private void SetTimeZone(TimeZoneInfo? tz)
     {
-        timeZone = (tz ?? TimeZoneInfo.Local).GetUtcOffset(date).TotalHours;
+        var resolvedTimeZone = tz ?? TimeZoneInfo.Local;
+        var offsetDate = _date.Kind == DateTimeKind.Utc ? _date : DateTime.SpecifyKind(_date, DateTimeKind.Local);
+        _timeZone = resolvedTimeZone.GetUtcOffset(offsetDate).TotalHours;
     }
 
     private Hashtable ComputeTimes()
@@ -259,12 +361,12 @@ public class PrayerTimes
         times = ComputePrayerTimes(times);
         times = AdjustTimes(times);
 
-        if (midnightMode == MidnightModes.JAFARI)
+        if (_midnightMode == MidnightModes.JAFARI)
             times[MIDNIGHT] = Convert.ToDouble(times[SUNSET]) + TimeDiff(Convert.ToDouble(times[SUNSET]), Convert.ToDouble(times[FAJR])) / 2d;
         else
             times[MIDNIGHT] = Convert.ToDouble(times[SUNSET]) + TimeDiff(Convert.ToDouble(times[SUNSET]), Convert.ToDouble(times[SUNRISE])) / 2d;
 
-        if (method == PrayerCalculationMethods.MOONSIGHTING)
+        if (_method == PrayerCalculationMethods.MOONSIGHTING)
             times = MoonsightingRecalculation(times);
 
         times = TuneTimes(times);
@@ -277,7 +379,7 @@ public class PrayerTimes
         List<string> keys = GetKeys(times);
         foreach (string key in keys)
         {
-            times[key] = GetFormattedTime(Convert.ToDouble(times[key]), timeFormat);
+            times[key] = GetFormattedTime(Convert.ToDouble(times[key]), _timeFormat);
         }
 
         return times;
@@ -285,14 +387,14 @@ public class PrayerTimes
 
     private Hashtable TuneTimes(Hashtable times)
     {
-        if (tuneTimesOffset != null && tuneTimesOffset.Count > 0)
+        if (_tuneTimesOffset != null && _tuneTimesOffset.Count > 0)
         {
             List<string> keys = GetKeys(times);
             foreach (string key in keys)
             {
-                if (tuneTimesOffset.ContainsKey(key))
+                if (_tuneTimesOffset.ContainsKey(key))
                 {
-                    times[key] = Convert.ToDouble(times[key]) + Convert.ToDouble(tuneTimesOffset[key]) / 60d;
+                    times[key] = Convert.ToDouble(times[key]) + _tuneTimesOffset[key] / 60d;
                 }
 
             }
@@ -311,9 +413,12 @@ public class PrayerTimes
 
         double hours = Math.Floor(time);
         double minutes = Math.Floor((time - hours) * 60d);
-        string suffix = (timeFormat == TimeFormats.TIME_FORMAT_12H) ? suffixes[hours < 12 ? 0 : 1] : string.Empty;
-        string hour = (format == TimeFormats.TIME_FORMAT_24H) ? TwoDigitsFormat(hours) : ((hours + 12 - 1) % 12 + 1).ToString();
+        string suffix = (_timeFormat == TimeFormats.TIME_FORMAT_12H) ? suffixes[hours < 12 ? 0 : 1] : string.Empty;
+        string hour = (format == TimeFormats.TIME_FORMAT_24H || format == TimeFormats.TIME_FORMAT_ISO8601) ? TwoDigitsFormat(hours) : ((hours + 12 - 1) % 12 + 1).ToString();
         string twoDigitMinutes = TwoDigitsFormat(minutes);
+
+        if (format == TimeFormats.TIME_FORMAT_ISO8601)
+            return $"{hour}:{twoDigitMinutes}:00";
 
         return $"{hour}:{twoDigitMinutes}" + string.Format("{0}", !string.IsNullOrEmpty(suffix) ? " " + suffix : string.Empty);
     }
@@ -321,13 +426,13 @@ public class PrayerTimes
     public string TwoDigitsFormat(double num) => (num < 10) ? "0" + num : num + "";
     private Hashtable MoonsightingRecalculation(Hashtable times)
     {
-        var fajrMS = new Fajr(date, latitude);
+        var fajrMS = new Fajr(_date, _latitude);
         times[FAJR] = Convert.ToDouble(times[SUNRISE]) - (fajrMS.GetMinutesBeforeSunrise() / 60d);
 
-        if (IsMin(settings[IMSAK].ToString()))
-            times[IMSAK] = Convert.ToDouble(times[FAJR]) - Evaluate(settings[IMSAK].ToString()) / 60d;
+        if (IsMin(_settings[IMSAK]))
+            times[IMSAK] = Convert.ToDouble(times[FAJR]) - Evaluate(_settings[IMSAK]) / 60d;
 
-        var ishaMS = new Isha(date, latitude, shafaq);
+        var ishaMS = new Isha(_date, _latitude, _shafaq);
         times[ISHA] = Convert.ToDouble(times[SUNSET]) + (ishaMS.GetMinutesAfterSunset() / 60d);
 
         return times;
@@ -345,19 +450,19 @@ public class PrayerTimes
     {
         List<string> keys = GetKeys(times);
         foreach (string key in keys)
-            times[key] = (double)times[key] + timeZone - (longitude / 15);
+            times[key] = (double)times[key] + _timeZone - (_longitude / 15);
 
-        if (latitudeAdjustmentMethod != LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_NONE)
+        if (_latitudeAdjustmentMethod != LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_NONE)
         {
             times = AdjustHighLatitudes(times);
         }
-        if (IsMin(settings[IMSAK].ToString()))
-            times[IMSAK] = Convert.ToDouble(times[FAJR]) - Evaluate(settings[IMSAK].ToString()) / 60;
-        if (IsMin(settings[MAGHRIB].ToString()))
-            times[MAGHRIB] = Convert.ToDouble(times[SUNSET]) + Evaluate(settings[MAGHRIB].ToString()) / 60;
-        if (IsMin(settings[ISHA].ToString()))
-            times[ISHA] = Convert.ToDouble(times[MAGHRIB]) + Evaluate(settings[ISHA].ToString()) / 60;
-        times[ZHUHR] = Convert.ToDouble(times[ZHUHR]) + Evaluate(settings[ZHUHR].ToString()) / 60;
+        if (IsMin(_settings[IMSAK]))
+            times[IMSAK] = Convert.ToDouble(times[FAJR]) - Evaluate(_settings[IMSAK]) / 60;
+        if (IsMin(_settings[MAGHRIB]))
+            times[MAGHRIB] = Convert.ToDouble(times[SUNSET]) + Evaluate(_settings[MAGHRIB]) / 60;
+        if (IsMin(_settings[ISHA]))
+            times[ISHA] = Convert.ToDouble(times[MAGHRIB]) + Evaluate(_settings[ISHA]) / 60;
+        times[ZHUHR] = Convert.ToDouble(times[ZHUHR]) + Evaluate(_settings[ZHUHR]) / 60;
 
         return times;
     }
@@ -365,28 +470,28 @@ public class PrayerTimes
     private Hashtable AdjustHighLatitudes(Hashtable times)
     {
         double nightTime = TimeDiff((double)times[SUNSET], (double)times[SUNRISE]);
-        if (!IsMin(settings[IMSAK].ToString()))
-            times[IMSAK] = AdjustHLTime((double)times[IMSAK], (double)times[SUNRISE], Evaluate(settings[IMSAK].ToString()), nightTime, "ccw");
-        times[FAJR] = AdjustHLTime((double)times[FAJR], (double)times[SUNRISE], Evaluate(settings[FAJR].ToString()), nightTime, "ccw");
-        if (!IsMin(settings[ISHA].ToString()))
-            times[ISHA] = AdjustHLTime((double)times[ISHA], (double)times[SUNSET], Evaluate(settings[ISHA].ToString()), nightTime);
-        if (!IsMin(settings[MAGHRIB].ToString()))
-            times[MAGHRIB] = AdjustHLTime((double)times[MAGHRIB], (double)times[SUNSET], Evaluate(settings[MAGHRIB].ToString()), nightTime);
+        if (!IsMin(_settings[IMSAK]))
+            times[IMSAK] = AdjustHLTime((double)times[IMSAK], (double)times[SUNRISE], Evaluate(_settings[IMSAK]), nightTime, ClockwiseDirection);
+        times[FAJR] = AdjustHLTime((double)times[FAJR], (double)times[SUNRISE], Evaluate(_settings[FAJR]), nightTime, ClockwiseDirection);
+        if (!IsMin(_settings[ISHA]))
+            times[ISHA] = AdjustHLTime((double)times[ISHA], (double)times[SUNSET], Evaluate(_settings[ISHA]), nightTime);
+        if (!IsMin(_settings[MAGHRIB]))
+            times[MAGHRIB] = AdjustHLTime((double)times[MAGHRIB], (double)times[SUNSET], Evaluate(_settings[MAGHRIB]), nightTime);
         return times;
     }
 
     private double AdjustHLTime(double time, double baseTime, double angle, double night, string direction = null)
     {
         double portion = NightPortion(angle, night);
-        double diff = (direction == "ccw") ? TimeDiff(time, baseTime) : TimeDiff(baseTime, time);
+        double diff = (direction == ClockwiseDirection) ? TimeDiff(time, baseTime) : TimeDiff(baseTime, time);
         if (double.IsNaN(time) || diff > portion)
-            time = baseTime + (direction == "ccw" ? (-portion) : portion);
+            time = baseTime + (direction == ClockwiseDirection ? (-portion) : portion);
         return time;
     }
 
     private double NightPortion(double angle, double night)
     {
-        LatitudeAdjustmentMethods method = latitudeAdjustmentMethod;
+        LatitudeAdjustmentMethods method = _latitudeAdjustmentMethod;
         double portion = 1d / 2d;
         if (method == LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_ANGLE)
             portion = 1d / 60d * angle;
@@ -395,12 +500,8 @@ public class PrayerTimes
         return portion * night;
     }
 
-    private bool IsMin(string str)
-    {
-        if (str.IndexOf("min") > -1)
-            return true;
-        return false;
-    }
+    private bool IsMin(string str) =>
+        !string.IsNullOrEmpty(str) && str.IndexOf(MinSuffix, StringComparison.OrdinalIgnoreCase) > -1;
 
     private double TimeDiff(double c1, double c2)
     {
@@ -410,15 +511,14 @@ public class PrayerTimes
     private Hashtable ComputePrayerTimes(Hashtable times)
     {
         times = DayPortion(times);
-        double imsak = SunAngleTime(Evaluate(settings[IMSAK].ToString()), (double)times[IMSAK], "ccw");
-        double sunrise = SunAngleTime(RiseSetAngle(), (double)times[SUNRISE], "ccw");
-        double fajr = SunAngleTime(Evaluate(settings[FAJR].ToString()), (double)times[FAJR], "ccw");
+        double imsak = SunAngleTime(Evaluate(_settings[IMSAK]), (double)times[IMSAK], ClockwiseDirection);
+        double sunrise = SunAngleTime(RiseSetAngle(), (double)times[SUNRISE], ClockwiseDirection);
+        double fajr = SunAngleTime(Evaluate(_settings[FAJR]), (double)times[FAJR], ClockwiseDirection);
         double dhuhr = MidDay((double)times[ZHUHR]);
         double asr = AsrTime(AsrFactor(), (double)times[ASR]);
         double sunset = SunAngleTime(RiseSetAngle(), (double)times[SUNSET]);
-        double maghrib = IsMin(settings[MAGHRIB].ToString()) ? sunset : SunAngleTime(Evaluate(settings[MAGHRIB].ToString()), (double)times[MAGHRIB]);
-        //double maghrib = sunset;// SunAngleTime(Evaluate(settings[MAGHRIB].ToString()), (double)times[MAGHRIB]);
-        double isha = SunAngleTime(Evaluate(settings[ISHA].ToString()), (double)times[ISHA]);
+        double maghrib = IsMin(_settings[MAGHRIB]) ? sunset : SunAngleTime(Evaluate(_settings[MAGHRIB]), (double)times[MAGHRIB]);
+        double isha = SunAngleTime(Evaluate(_settings[ISHA]), (double)times[ISHA]);
         return new Hashtable()
         {
             [FAJR] = fajr,
@@ -443,11 +543,11 @@ public class PrayerTimes
 
     private double SunAngleTime(double angle, double time, string direction = null)
     {
-        double julianDate = JulianDate(date.Year, date.Month, date.Day) - longitude / (15 * 24);
+        double julianDate = JulianDate(_date.Year, _date.Month, _date.Day) - _longitude / (15 * 24);
         double dec1 = SunPosition(julianDate + time).Declination;
         double noon = MidDay(time);
-        double p1 = -DMath.Sin(angle) - DMath.Sin(dec1) * DMath.Sin(latitude);
-        double p2 = DMath.Cos(dec1) * DMath.Cos(latitude);
+        double p1 = -DMath.Sin(angle) - DMath.Sin(dec1) * DMath.Sin(_latitude);
+        double p2 = DMath.Cos(dec1) * DMath.Cos(_latitude);
         double cosRange = (p1 / p2);
         if (cosRange > 1)
             cosRange = 1;
@@ -455,7 +555,7 @@ public class PrayerTimes
             cosRange = -1;
         double t = (1d / 15d) * DMath.Arccos(cosRange);
 
-        return noon + (direction == "ccw" ? -t : t);
+        return noon + (direction == ClockwiseDirection ? -t : t);
     }
 
     public double JulianDate(int year, int month, int day)
@@ -474,7 +574,7 @@ public class PrayerTimes
 
     private double MidDay(double time)
     {
-        double julianDate = JulianDate(date.Year, date.Month, date.Day) - longitude / (15 * 24);
+        double julianDate = JulianDate(_date.Year, _date.Month, _date.Day) - _longitude / (15 * 24);
         double eqt = SunPosition(julianDate + time).Equation;
         double noon = DMath.FixHour(12 - eqt);
         return noon;
@@ -499,9 +599,12 @@ public class PrayerTimes
 
     private double AsrTime(int factor, double time)
     {
-        double julianDate = JulianDate(date.Year, date.Month, date.Day) - longitude / (15 * 24);
+        double julianDate = JulianDate(_date.Year, _date.Month, _date.Day) - _longitude / (15 * 24);
         double dec1 = SunPosition(julianDate + time).Declination;
-        double angle = -DMath.Arccot(factor + DMath.Tan(Math.Abs(latitude - dec1)));
+        double angle = -DMath.Arccot(factor + DMath.Tan(Math.Abs(_latitude - dec1)));
         return SunAngleTime(angle, time);
     }
+
+    [GeneratedRegex(@"^-?\d+(\.\d+)?")]
+    private static partial Regex EvaulateRegEx();
 }

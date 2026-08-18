@@ -1,5 +1,3 @@
-using PrayersTimeManager;
-
 namespace PrayerTimesManager.Tests;
 
 [TestClass]
@@ -58,7 +56,7 @@ public class MoonsightingPrayerTimesTests
     {
         var ms = new Fajr(new DateTime(2024, 6, 15), 20);
 
-        Assert.AreEqual("north", ms.hemisphere);
+        Assert.AreEqual("north", ms._hemisphere);
     }
 
     [TestMethod]
@@ -66,7 +64,7 @@ public class MoonsightingPrayerTimesTests
     {
         var ms = new Fajr(new DateTime(2024, 6, 15), -20);
 
-        Assert.AreEqual("south", ms.hemisphere);
+        Assert.AreEqual("south", ms._hemisphere);
     }
 
     [TestMethod]
