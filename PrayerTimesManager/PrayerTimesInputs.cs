@@ -1,4 +1,3 @@
-using PrayersTimeManager.Enums;
 using PrayerTimesManager.Enums;
 
 namespace PrayerTimesManager;

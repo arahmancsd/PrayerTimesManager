@@ -1,5 +1,4 @@
-﻿using PrayersTimeManager.Enums;
-using PrayerTimesManager.Enums;
+﻿using PrayerTimesManager.Enums;
 using System.Collections;
 using System.Globalization;
 using System.Text.RegularExpressions;

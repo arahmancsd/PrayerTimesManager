@@ -1,6 +1,4 @@
 using System.Collections;
-using PrayersTimeManager;
-using PrayersTimeManager.Enums;
 using PrayerTimesManager.Enums;
 
 namespace PrayerTimesManager.Tests;

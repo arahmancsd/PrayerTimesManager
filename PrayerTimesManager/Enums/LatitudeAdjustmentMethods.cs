@@ -1,4 +1,4 @@
-﻿namespace PrayersTimeManager.Enums;
+﻿namespace PrayerTimesManager.Enums;
 
 public enum LatitudeAdjustmentMethods
 {

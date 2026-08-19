@@ -1,5 +1,4 @@
 using System.Collections;
-using PrayersTimeManager.Enums;
 using PrayerTimesManager;
 using PrayerTimesManager.Enums;
 

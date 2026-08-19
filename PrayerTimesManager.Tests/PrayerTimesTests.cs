@@ -1,6 +1,4 @@
 using System.Collections;
-using PrayersTimeManager;
-using PrayersTimeManager.Enums;
 using PrayerTimesManager.Enums;
 
 namespace PrayerTimesManager.Tests;
@@ -489,7 +487,7 @@ public class PrayerTimesTests
     {
         DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
         var fake = new FakeTimeProvider(today.ToUniversalTime());
-        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
+        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc, Format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Hashtable result = new PrayerTimes(timeProvider: fake).Now(inputs);
         Hashtable expected = new PrayerTimes(timeProvider: fake).GetTimes(
@@ -505,7 +503,7 @@ public class PrayerTimesTests
     {
         DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
         var fake = new FakeTimeProvider(today.ToUniversalTime());
-        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc);
+        var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc, Format: TimeFormats.TIME_FORMAT_FLOAT);
 
         PrayerTimesResult result = new PrayerTimes(timeProvider: fake).NowResult(inputs);
         PrayerTimesResult expected = new PrayerTimes(timeProvider: fake).GetTimesResult(

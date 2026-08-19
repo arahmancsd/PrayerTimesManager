@@ -6,7 +6,7 @@
 
   <PropertyGroup>
     <PackageId>PrayerTimesManager</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.0.1</Version>
     <Authors>Abdul Rahman</Authors>
     <Description>A .NET library for calculating Islamic prayer times (Fajr, Sunrise, Dhuhr, Asr, Sunset, Maghrib, Isha, Midnight) for any location and date, with support for multiple calculation methods, juristic schools, latitude adjustment methods, and time formats.</Description>
     <PackageTags>prayer-times;islam;islamic;salah;namaz;adhan;athan;fajr;dhuhr;asr;maghrib;isha</PackageTags>
