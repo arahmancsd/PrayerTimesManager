@@ -15,6 +15,7 @@ public static class PrayerTimesExamples
         InputRecordExample();
         DifferentFormatsExample();
         CustomSettingsExample();
+        MoonsightingExample();
     }
 
     private static void BasicHashtableExample()
@@ -128,6 +129,26 @@ public static class PrayerTimesExamples
             51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), TimeZoneInfo.Utc);
 
         PrintResult(result);
+    }
+
+    private static void MoonsightingExample()
+    {
+        Console.WriteLine("=== Moonsighting.com method (default Sunni vs Shi'a Maghrib offset) ===");
+
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+
+        // The Moonsighting method automatically applies a default 5-minute Zuhr offset and a
+        // 3-minute (Sunni) Maghrib offset. These are surfaced through TuneTimeOffsets, alongside
+        // any offsets set via SetTuneTimeOffset.
+        PrayerTimesResult sunniResult = prayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
+        Console.WriteLine($"Active tune offsets: {string.Join(", ", prayerTimes.TuneTimeOffsets.Select(kv => $"{kv.Key}={kv.Value}min"))}");
+        Console.WriteLine($"Dhuhr:   {sunniResult.Dhuhr}");
+        Console.WriteLine($"Maghrib (Sunni): {sunniResult.Maghrib}");
+
+        prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
+        PrayerTimesResult shiaResult = prayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
+        Console.WriteLine($"Maghrib (Shi'a): {shiaResult.Maghrib}");
     }
 
     private static void PrintHashtable(Hashtable times)

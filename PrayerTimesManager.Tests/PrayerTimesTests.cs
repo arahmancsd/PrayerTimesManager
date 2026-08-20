@@ -244,6 +244,58 @@ public class PrayerTimesTests
     }
 
     [TestMethod]
+    public void TuneTimeOffsets_MoonsightingMethod_ContainsDefaultZuhrAndMaghribOffsets()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+
+        Assert.AreEqual(MoonsightingOffsets.ZuhrOffsetMinutes, prayerTimes.TuneTimeOffsets[PrayerTimes.ZHUHR]);
+        Assert.AreEqual(MoonsightingOffsets.SunniMaghribOffsetMinutes, prayerTimes.TuneTimeOffsets[PrayerTimes.MAGHRIB]);
+    }
+
+    [TestMethod]
+    public void TuneTimeOffsets_SwitchingAwayFromMoonsighting_ClearsDefaultOffsets()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        prayerTimes.SetMethod(PrayerCalculationMethods.MWL);
+
+        Assert.IsFalse(prayerTimes.TuneTimeOffsets.ContainsKey(PrayerTimes.ZHUHR));
+        Assert.IsFalse(prayerTimes.TuneTimeOffsets.ContainsKey(PrayerTimes.MAGHRIB));
+    }
+
+    [TestMethod]
+    public void SetTuneTimeOffset_MergesWithMoonsightingDefaults()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
+        {
+            [PrayerTimes.FAJR] = 10
+        });
+
+        Assert.AreEqual(10d, prayerTimes.TuneTimeOffsets[PrayerTimes.FAJR]);
+        Assert.AreEqual(MoonsightingOffsets.ZuhrOffsetMinutes, prayerTimes.TuneTimeOffsets[PrayerTimes.ZHUHR]);
+        Assert.AreEqual(MoonsightingOffsets.SunniMaghribOffsetMinutes, prayerTimes.TuneTimeOffsets[PrayerTimes.MAGHRIB]);
+    }
+
+    [TestMethod]
+    public void SetTuneTimeOffset_OverridesMoonsightingMaghribDefault()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
+        {
+            [PrayerTimes.MAGHRIB] = 20
+        });
+
+        Hashtable times = prayerTimes.GetTimes(
+            51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double sunset = Convert.ToDouble(times[PrayerTimes.SUNSET]);
+        double maghrib = Convert.ToDouble(times[PrayerTimes.MAGHRIB]);
+
+        Assert.AreEqual(20d, prayerTimes.TuneTimeOffsets[PrayerTimes.MAGHRIB]);
+        Assert.AreEqual(20d / 60d, maghrib - sunset, 1e-6);
+    }
+
+    [TestMethod]
     public void Now_ReturnsTimesForToday()
     {
         DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
@@ -278,9 +330,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void SunPosition_ReturnsDeclinationAndEquation()
     {
-        var prayerTimes = new PrayerTimes();
-        var method = typeof(PrayerTimes).GetMethod("SunPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        Sun sun = (Sun)method!.Invoke(prayerTimes, [2451545.0])!;
+        var method = typeof(PrayerTimes).GetMethod("SunPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Sun sun = (Sun)method!.Invoke(null, [2451545.0])!;
 
         Assert.IsNotNull(sun);
         Assert.IsFalse(double.IsNaN(sun.Declination));
@@ -290,9 +341,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void JulianDate_ReturnsCorrectValueForKnownDate()
     {
-        var prayerTimes = new PrayerTimes();
-        var method = typeof(PrayerTimes).GetMethod("JulianDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-        double jd = (double)method!.Invoke(prayerTimes, [2000, 1, 1])!;
+        var method = typeof(PrayerTimes).GetMethod("JulianDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        double jd = (double)method!.Invoke(null, [2000, 1, 1])!;
 
         // JulianDate computes the JD at 0h UT, not 12h UT.
         Assert.AreEqual(2451544.5, jd, 1e-6);
@@ -370,6 +420,47 @@ public class PrayerTimesTests
         Assert.IsFalse(double.IsNaN(isha), "High-latitude capped Isha should not be NaN.");
         Assert.IsTrue(isha > sunset, "Isha should occur after sunset.");
         Assert.IsTrue(isha < fajr + 24, "Isha should occur before the next day's Fajr.");
+    }
+
+    [TestMethod]
+    public void GetTimes_MoonsightingMethod_AppliesDefaultZuhrOffset()
+    {
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        var mwlTimes = new PrayerTimes(PrayerCalculationMethods.MWL).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        var moonsightingTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double mwlDhuhr = Convert.ToDouble(mwlTimes[PrayerTimes.ZHUHR]);
+        double moonsightingDhuhr = Convert.ToDouble(moonsightingTimes[PrayerTimes.ZHUHR]);
+
+        Assert.AreEqual(MoonsightingOffsets.ZuhrOffsetMinutes / 60d, moonsightingDhuhr - mwlDhuhr, 1e-6);
+    }
+
+    [TestMethod]
+    public void GetTimes_MoonsightingMethod_DefaultsToSunniMaghribOffset()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        Hashtable times = prayerTimes.GetTimes(
+            51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double sunset = Convert.ToDouble(times[PrayerTimes.SUNSET]);
+        double maghrib = Convert.ToDouble(times[PrayerTimes.MAGHRIB]);
+
+        Assert.AreEqual(MoonsightingOffsets.SunniMaghribOffsetMinutes / 60d, maghrib - sunset, 1e-6);
+    }
+
+    [TestMethod]
+    public void SetMoonsightingMaghribType_Shia_AppliesShiaMaghribOffset()
+    {
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+        prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
+
+        Hashtable times = prayerTimes.GetTimes(
+            51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double sunset = Convert.ToDouble(times[PrayerTimes.SUNSET]);
+        double maghrib = Convert.ToDouble(times[PrayerTimes.MAGHRIB]);
+
+        Assert.AreEqual(MoonsightingOffsets.ShiaMaghribOffsetMinutes / 60d, maghrib - sunset, 1e-6);
     }
 
     [TestMethod]

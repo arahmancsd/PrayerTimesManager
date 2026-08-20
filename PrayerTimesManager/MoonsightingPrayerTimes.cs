@@ -163,3 +163,37 @@ public sealed class Isha : MoonsightingPrayerTimes
         return (int)Math.Round(GetMinutes());
     }
 }
+
+/// <summary>
+/// Specifies which juristic convention is used to determine the actual (Shari'ah-compliant)
+/// sunset offset applied to Maghrib under the Moonsighting Committee Worldwide calculation method.
+/// </summary>
+public enum MoonsightingMaghribType
+{
+    /// <summary>Sunni convention: actual sunset occurs <see cref="MoonsightingOffsets.SunniMaghribOffsetMinutes"/> minutes after theoretical sunset.</summary>
+    SUNNI,
+    /// <summary>Shi'a convention: actual sunset occurs <see cref="MoonsightingOffsets.ShiaMaghribOffsetMinutes"/> minutes after theoretical sunset.</summary>
+    SHIA,
+    /// <summary>The default Maghrib convention, equivalent to <see cref="SUNNI"/>.</summary>
+    DEFAULT = SUNNI
+}
+
+/// <summary>
+/// Provides the default Zuhr and Maghrib offsets, in minutes, defined by the Moonsighting
+/// Committee Worldwide method. See https://www.moonsighting.com/how-we.html for details.
+/// </summary>
+public static class MoonsightingOffsets
+{
+    /// <summary>The default number of minutes after zenith at which Zuhr occurs (5 minutes).</summary>
+    public const double ZuhrOffsetMinutes = 5d;
+    /// <summary>The default number of minutes after theoretical sunset at which Maghrib occurs under the Sunni convention (3 minutes).</summary>
+    public const double SunniMaghribOffsetMinutes = 3d;
+    /// <summary>The default number of minutes after theoretical sunset at which Maghrib occurs under the Shi'a convention (17 minutes).</summary>
+    public const double ShiaMaghribOffsetMinutes = 17d;
+
+    /// <summary>Gets the Maghrib offset, in minutes, for the specified <see cref="MoonsightingMaghribType"/>.</summary>
+    /// <param name="maghribType">The Maghrib convention.</param>
+    /// <returns>The offset, in minutes, after theoretical sunset.</returns>
+    public static double GetMaghribOffsetMinutes(MoonsightingMaghribType maghribType) =>
+        maghribType == MoonsightingMaghribType.SHIA ? ShiaMaghribOffsetMinutes : SunniMaghribOffsetMinutes;
+}

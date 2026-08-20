@@ -89,4 +89,20 @@ public class MoonsightingPrayerTimesTests
         Assert.AreEqual(0, dyySolstice);
         Assert.AreEqual(1, dyyNextDay);
     }
+
+    [TestMethod]
+    public void MoonsightingOffsets_HasExpectedDefaultValues()
+    {
+        Assert.AreEqual(5d, MoonsightingOffsets.ZuhrOffsetMinutes);
+        Assert.AreEqual(3d, MoonsightingOffsets.SunniMaghribOffsetMinutes);
+        Assert.AreEqual(17d, MoonsightingOffsets.ShiaMaghribOffsetMinutes);
+    }
+
+    [TestMethod]
+    public void MoonsightingOffsets_GetMaghribOffsetMinutes_ReturnsExpectedValuePerType()
+    {
+        Assert.AreEqual(MoonsightingOffsets.SunniMaghribOffsetMinutes, MoonsightingOffsets.GetMaghribOffsetMinutes(MoonsightingMaghribType.SUNNI));
+        Assert.AreEqual(MoonsightingOffsets.ShiaMaghribOffsetMinutes, MoonsightingOffsets.GetMaghribOffsetMinutes(MoonsightingMaghribType.SHIA));
+        Assert.AreEqual(MoonsightingOffsets.SunniMaghribOffsetMinutes, MoonsightingOffsets.GetMaghribOffsetMinutes(MoonsightingMaghribType.DEFAULT));
+    }
 }

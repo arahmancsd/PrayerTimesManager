@@ -233,7 +233,9 @@ public sealed record PrayerCalculationMethod
             ["shafaq"] = Isha.shafaq
         },
         location: null,
-        description: string.Format("{0}", "Fajr angle 18, Isha angle 18. Also uses seasonal adjustement values")
+        description: string.Format("{0}", "Fajr angle 18, Isha angle 18. Also uses seasonal adjustement values. " +
+            "A default 5-minute Zuhr offset and a Maghrib offset of 3 minutes (Sunni) or 17 minutes (Shi'a) after sunset " +
+            "are applied automatically via PrayerTimes.TuneTimeOffsets")
         );
     /// <summary>Gets the Algerian Minister of Religious Affairs and Wakfs calculation method.</summary>
     public static PrayerCalculationMethod Algeria => new(id: 16, name: "Algerian Minister of Religious Affairs and Wakfs",

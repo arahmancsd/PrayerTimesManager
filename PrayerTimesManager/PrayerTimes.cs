@@ -35,6 +35,14 @@ public partial class PrayerTimes
     public const string INVALID_TIME = "-----";
 
     private Dictionary<string, PrayerCalculationMethod> CalculationMethodList { get; set; } = [];
+
+    /// <summary>
+    /// Gets the currently active per-prayer time offsets, in minutes, applied after all other calculations.
+    /// This includes any offsets set via <see cref="SetTuneTimeOffset"/> as well as the default offsets
+    /// automatically applied for the <see cref="PrayerCalculationMethods.MOONSIGHTING"/> method
+    /// (see <see cref="MoonsightingOffsets"/>).
+    /// </summary>
+    public IReadOnlyDictionary<string, double> TuneTimeOffsets => _tuneTimesOffset;
     
     private const string MinSuffix = "min";
     private const string ClockwiseDirection = "ccw";
@@ -45,6 +53,7 @@ public partial class PrayerTimes
     private MidnightModes _midnightMode = MidnightModes.DEFAULT;
     private LatitudeAdjustmentMethods _latitudeAdjustmentMethod;
     private Shafaq _shafaq = Isha.shafaq; // Only valid for METHOD_MOONSIGHTING
+    private MoonsightingMaghribType _moonsightingMaghribType = MoonsightingMaghribType.DEFAULT; // Only valid for METHOD_MOONSIGHTING
     private TimeFormats _timeFormat;
     private double _latitude;
     private double _longitude;
@@ -53,6 +62,7 @@ public partial class PrayerTimes
     private Dictionary<string, string> _settings = [];
     private double _timeZone;
     private Dictionary<string, double> _tuneTimesOffset = [];
+    private readonly HashSet<string> _autoTunedOffsetKeys = [];
 
     private readonly TimeProvider _timeProvider;
 
@@ -99,6 +109,30 @@ public partial class PrayerTimes
         {
             SetMidnightMode(MidnightModes.STANDARD);
         }
+
+        if (_method == PrayerCalculationMethods.MOONSIGHTING)
+            ApplyMoonsightingTuneOffsets();
+        else
+            ClearAutoTuneOffsets();
+    }
+
+    private void ApplyMoonsightingTuneOffsets()
+    {
+        SetAutoTuneOffset(ZHUHR, MoonsightingOffsets.ZuhrOffsetMinutes);
+        SetAutoTuneOffset(MAGHRIB, MoonsightingOffsets.GetMaghribOffsetMinutes(_moonsightingMaghribType));
+    }
+
+    private void SetAutoTuneOffset(string key, double minutes)
+    {
+        _tuneTimesOffset[key] = minutes;
+        _autoTunedOffsetKeys.Add(key);
+    }
+
+    private void ClearAutoTuneOffsets()
+    {
+        foreach (string key in _autoTunedOffsetKeys)
+            _tuneTimesOffset.Remove(key);
+        _autoTunedOffsetKeys.Clear();
     }
 
     private void SetPrayerCalculationMethodList()
@@ -123,11 +157,19 @@ public partial class PrayerTimes
         LoadSettings();
     }
 
-    /// <summary>Sets per-prayer time offsets, in minutes, applied after all other calculations.</summary>
+    /// <summary>
+    /// Sets per-prayer time offsets, in minutes, applied after all other calculations. Entries are merged
+    /// into any existing offsets (such as the defaults automatically applied for the
+    /// <see cref="PrayerCalculationMethods.MOONSIGHTING"/> method), overriding the value for any matching key.
+    /// </summary>
     /// <param name="offset">A dictionary mapping prayer time keys to their offset in minutes.</param>
     public void SetTuneTimeOffset(Dictionary<string, double> offset)
     {
-        _tuneTimesOffset = offset;
+        foreach ((string key, double minutes) in offset)
+        {
+            _tuneTimesOffset[key] = minutes;
+            _autoTunedOffsetKeys.Remove(key);
+        }
     }
 
     /// <summary>Sets the twilight color used to determine the Isha time under the Moonsighting calculation method.</summary>
@@ -135,6 +177,16 @@ public partial class PrayerTimes
     public void SetShafaq(Shafaq shafaq)
     {
         _shafaq = shafaq;
+    }
+
+    /// <summary>Sets the Maghrib sunset-offset convention used under the Moonsighting calculation method.</summary>
+    /// <param name="maghribType">The Maghrib convention to use.</param>
+    public void SetMoonsightingMaghribType(MoonsightingMaghribType maghribType)
+    {
+        _moonsightingMaghribType = maghribType;
+
+        if (_method == PrayerCalculationMethods.MOONSIGHTING)
+            SetAutoTuneOffset(MAGHRIB, MoonsightingOffsets.GetMaghribOffsetMinutes(_moonsightingMaghribType));
     }
 
     /// <summary>Sets the juristic school used to determine the Asr shadow factor.</summary>
