@@ -122,6 +122,37 @@ prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
 });
 ```
 
+### Moonsighting.com method offsets
+
+The `MOONSIGHTING` method (Moonsighting Committee Worldwide) automatically applies two default offsets, as defined at [moonsighting.com/how-we.html](https://www.moonsighting.com/how-we.html):
+
+- **Dhuhr**: 5 minutes after zenith
+- **Maghrib**: 3 minutes after theoretical sunset for the Sunni convention, or 17 minutes for the Shi'a convention
+
+These defaults are applied via the same tune-offset mechanism as `SetTuneTimeOffset`, and are exposed through the read-only `TuneTimeOffsets` property:
+
+```csharp
+var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+
+// Inspect the currently active offsets (Dhuhr = 5, Maghrib = 3 by default)
+foreach (var (key, minutes) in prayerTimes.TuneTimeOffsets)
+    Console.WriteLine($"{key}: {minutes} min");
+
+// Switch to the Shi'a Maghrib convention (17 minutes after sunset)
+prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
+```
+
+You can also override either default directly with `SetTuneTimeOffset`; explicit values you set always take precedence over the built-in defaults:
+
+```csharp
+prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
+{
+    [PrayerTimes.MAGHRIB] = 20 // overrides the default Moonsighting Maghrib offset
+});
+```
+
+The default offset values themselves are available as constants on `MoonsightingOffsets` (`ZuhrOffsetMinutes`, `SunniMaghribOffsetMinutes`, `ShiaMaghribOffsetMinutes`).
+
 ### Testable time-dependent calls
 
 `PrayerTimes` accepts a `TimeProvider`, so `NowResult`/`TomorrowResult` can be tested deterministically:
