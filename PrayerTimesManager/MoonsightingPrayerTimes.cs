@@ -1,12 +1,24 @@
 ﻿namespace PrayerTimesManager;
 
+/// <summary>
+/// Base class implementing the Moonsighting Committee Worldwide seasonal adjustment method
+/// for calculating Fajr and Isha times based on the day of the year and latitude.
+/// </summary>
 public class MoonsightingPrayerTimes
 {
-    public double _latitude;
-    public DateTime _date;
+    /// <summary>The latitude of the location, in degrees.</summary>
+    protected double _latitude;
+    /// <summary>The date for which the calculation is performed.</summary>
+    protected DateTime _date;
+    /// <summary>Seasonal minutes coefficients used by the interpolation formula.</summary>
     protected double a, b, c, d;
+    /// <summary>The day of the year, adjusted relative to the winter/summer solstice for the applicable hemisphere.</summary>
     protected int _dyy;
+    /// <summary>The hemisphere ("north" or "south") of the location, derived from <see cref="_latitude"/>.</summary>
     public string? _hemisphere;
+    /// <summary>Initializes a new instance of the <see cref="MoonsightingPrayerTimes"/> class.</summary>
+    /// <param name="date">The date for which the calculation is performed.</param>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
     public MoonsightingPrayerTimes(DateTime date, double latitude)
     {
         _date = date;
@@ -14,7 +26,12 @@ public class MoonsightingPrayerTimes
         GetDyy();
     }
 
-    public int GetDyy()
+    /// <summary>
+    /// Computes and returns the day of the year adjusted relative to the winter/summer solstice,
+    /// depending on which hemisphere the location is in.
+    /// </summary>
+    /// <returns>The adjusted day of the year.</returns>
+    private int GetDyy()
     {
         int year = _date.Year;
         DateTime dateDyyZero;
@@ -36,6 +53,8 @@ public class MoonsightingPrayerTimes
 
         return _dyy;
     }
+    /// <summary>Computes the seasonal number of minutes using piecewise linear interpolation over the year.</summary>
+    /// <returns>The interpolated number of minutes.</returns>
     protected double GetMinutes()
     {
         if (_dyy < 91)
@@ -54,8 +73,15 @@ public class MoonsightingPrayerTimes
     }
 }
 
+/// <summary>
+/// Calculates the number of minutes before sunrise for Fajr using the Moonsighting Committee
+/// Worldwide seasonal adjustment method.
+/// </summary>
 public class Fajr : MoonsightingPrayerTimes
 {
+    /// <summary>Initializes a new instance of the <see cref="Fajr"/> class.</summary>
+    /// <param name="date">The date for which the calculation is performed.</param>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
     public Fajr(DateTime date, double latitude) : base(date, latitude)
     {
         a = 75d + 28.65 / 55d * Math.Abs(_latitude);
@@ -64,27 +90,47 @@ public class Fajr : MoonsightingPrayerTimes
         d = 75 + 48.1 / 55 * Math.Abs(_latitude);
     }
 
+    /// <summary>Gets the number of minutes before sunrise at which Fajr occurs.</summary>
+    /// <returns>The number of minutes before sunrise.</returns>
     public int GetMinutesBeforeSunrise()
     {
         return (int)Math.Round(GetMinutes());
     }
 }
 
+/// <summary>
+/// Specifies the twilight color used to determine the Isha time under the Moonsighting Committee
+/// Worldwide calculation method.
+/// </summary>
 public enum Shafaq
 {
+    /// <summary>Reddish twilight (Shafaq Ahmer).</summary>
     SHAFAQ_AHMER,
+    /// <summary>Whitish twilight (Shafaq Abyad).</summary>
     SHAFAQ_ABYAD,
+    /// <summary>General twilight, used when no specific color is required.</summary>
     SHAFAQ_GENERAL
 }
 
+/// <summary>
+/// Calculates the number of minutes after sunset for Isha using the Moonsighting Committee
+/// Worldwide seasonal adjustment method.
+/// </summary>
 public sealed class Isha : MoonsightingPrayerTimes
 {
+    /// <summary>The default <see cref="Shafaq"/> value used when none is specified.</summary>
     public const Shafaq shafaq = Shafaq.SHAFAQ_GENERAL;
+    /// <summary>Initializes a new instance of the <see cref="Isha"/> class.</summary>
+    /// <param name="date">The date for which the calculation is performed.</param>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="shafaq">The twilight color used to determine the Isha time.</param>
     public Isha(DateTime date, double latitude, Shafaq shafaq = Shafaq.SHAFAQ_GENERAL) : base(date, latitude)
     {
         SetShafaq(shafaq);
     }
 
+    /// <summary>Sets the seasonal minutes coefficients based on the specified twilight color.</summary>
+    /// <param name="shafaq">The twilight color used to determine the Isha time.</param>
     public void SetShafaq(Shafaq shafaq)
     {
         switch (shafaq)
@@ -110,6 +156,8 @@ public sealed class Isha : MoonsightingPrayerTimes
         }
     }
 
+    /// <summary>Gets the number of minutes after sunset at which Isha occurs.</summary>
+    /// <returns>The number of minutes after sunset.</returns>
     public int GetMinutesAfterSunset()
     {
         return (int)Math.Round(GetMinutes());

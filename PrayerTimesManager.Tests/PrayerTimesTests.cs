@@ -13,8 +13,10 @@ public class PrayerTimesTests
     {
         var prayerTimes = new PrayerTimes();
 
-        Assert.IsNotNull(prayerTimes.CalculationMethodList);
-        Assert.IsNotNull(prayerTimes.CalculationMethodCodeList);
+        var calculationMethodListProperty = typeof(PrayerTimes).GetProperty("CalculationMethodList", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        var calculationMethodList = calculationMethodListProperty!.GetValue(prayerTimes);
+
+        Assert.IsNotNull(calculationMethodList);
     }
 
     [TestMethod]
@@ -277,7 +279,8 @@ public class PrayerTimesTests
     public void SunPosition_ReturnsDeclinationAndEquation()
     {
         var prayerTimes = new PrayerTimes();
-        Sun sun = prayerTimes.SunPosition(2451545.0);
+        var method = typeof(PrayerTimes).GetMethod("SunPosition", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Sun sun = (Sun)method!.Invoke(prayerTimes, [2451545.0])!;
 
         Assert.IsNotNull(sun);
         Assert.IsFalse(double.IsNaN(sun.Declination));
@@ -288,7 +291,8 @@ public class PrayerTimesTests
     public void JulianDate_ReturnsCorrectValueForKnownDate()
     {
         var prayerTimes = new PrayerTimes();
-        double jd = prayerTimes.JulianDate(2000, 1, 1);
+        var method = typeof(PrayerTimes).GetMethod("JulianDate", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        double jd = (double)method!.Invoke(prayerTimes, [2000, 1, 1])!;
 
         // JulianDate computes the JD at 0h UT, not 12h UT.
         Assert.AreEqual(2451544.5, jd, 1e-6);

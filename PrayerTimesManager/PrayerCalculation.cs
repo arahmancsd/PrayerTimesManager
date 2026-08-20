@@ -3,25 +3,36 @@ using System.Collections;
 
 namespace PrayerTimesManager;
 
+/// <summary>
+/// Provides configuration of custom calculation parameters and lookups of the built-in
+/// <see cref="PrayerCalculationMethod"/> definitions.
+/// </summary>
 public sealed class PrayerCalculation
 {
     private readonly Hashtable paramMethods = [];
 
+    /// <summary>Sets the custom Fajr angle, in degrees.</summary>
+    /// <param name="angle">The Fajr angle, in degrees, below the horizon.</param>
     public void SetFajrAngle(double angle)
     {
         paramMethods[PrayerTimes.FAJR] = angle;
     }
 
+    /// <summary>Sets the custom Maghrib angle or number of minutes after sunset.</summary>
+    /// <param name="angleOrMinsAfterSunset">The Maghrib angle, in degrees, or minutes after sunset.</param>
     public void SetMaghribAngleOrMins(double angleOrMinsAfterSunset)
     {
         paramMethods[PrayerTimes.MAGHRIB] = angleOrMinsAfterSunset;
     }
 
+    /// <summary>Sets the custom Isha angle or number of minutes after Maghrib.</summary>
+    /// <param name="angleOrMinsAfterMaghrib">The Isha angle, in degrees, or minutes after Maghrib.</param>
     public void SetIshaAngleOrMins(double angleOrMinsAfterMaghrib)
     {
         paramMethods[PrayerTimes.ISHA] = angleOrMinsAfterMaghrib;
     }
 
+    /// <summary>Gets a lookup table mapping each <see cref="PrayerCalculationMethods"/> code to itself.</summary>
     public static Hashtable PrayerCalculationsCodes => new()
     {
         [(short)PrayerCalculationMethods.JAFARI] = (short)PrayerCalculationMethods.JAFARI,
@@ -47,6 +58,7 @@ public sealed class PrayerCalculation
         [(short)PrayerCalculationMethods.INDONESIA] = (short)PrayerCalculationMethods.INDONESIA
     };
 
+    /// <summary>Gets a dictionary mapping each calculation method name to its <see cref="PrayerCalculationMethod"/> definition.</summary>
     public static Dictionary<string, PrayerCalculationMethod> PrayerCalculations
     {
         get

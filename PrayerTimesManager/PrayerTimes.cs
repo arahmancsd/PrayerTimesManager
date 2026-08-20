@@ -5,22 +5,36 @@ using System.Text.RegularExpressions;
 
 namespace PrayerTimesManager;
 
+/// <summary>
+/// Calculates Islamic prayer times (Imsak, Fajr, Sunrise, Dhuhr, Asr, Sunset, Maghrib, Isha, and Midnight)
+/// for a given location and date, supporting multiple calculation methods, juristic schools,
+/// latitude adjustment methods, and time formats.
+/// </summary>
 public partial class PrayerTimes
 {
+    /// <summary>The key used to identify the Imsak time.</summary>
     public const string IMSAK = "Imsak";
+    /// <summary>The key used to identify the Fajr time.</summary>
     public const string FAJR = "Fajr";
+    /// <summary>The key used to identify the Sunrise time.</summary>
     public const string SUNRISE = "Sunrise";
+    /// <summary>The key used to identify the Dhuhr time.</summary>
     public const string ZHUHR = "Dhuhr";
+    /// <summary>The key used to identify the Asr time.</summary>
     public const string ASR = "Asr";
+    /// <summary>The key used to identify the Sunset time.</summary>
     public const string SUNSET = "Sunset";
+    /// <summary>The key used to identify the Maghrib time.</summary>
     public const string MAGHRIB = "Maghrib";
+    /// <summary>The key used to identify the Isha time.</summary>
     public const string ISHA = "Isha";
+    /// <summary>The key used to identify the Midnight time.</summary>
     public const string MIDNIGHT = "Midnight";
 
+    /// <summary>The placeholder value used to represent an invalid or unavailable time.</summary>
     public const string INVALID_TIME = "-----";
 
-    public Dictionary<string, PrayerCalculationMethod> CalculationMethodList { get; private set; }
-    public Hashtable CalculationMethodCodeList { get; private set; }
+    private Dictionary<string, PrayerCalculationMethod> CalculationMethodList { get; set; } = [];
     
     private const string MinSuffix = "min";
     private const string ClockwiseDirection = "ccw";
@@ -36,12 +50,17 @@ public partial class PrayerTimes
     private double _longitude;
     private double _elevation;
     private readonly int? _asrShadowFactor;
-    private Dictionary<string, string> _settings;
+    private Dictionary<string, string> _settings = [];
     private double _timeZone;
-    private Dictionary<string, double> _tuneTimesOffset;
+    private Dictionary<string, double> _tuneTimesOffset = [];
 
     private readonly TimeProvider _timeProvider;
 
+    /// <summary>Initializes a new instance of the <see cref="PrayerTimes"/> class.</summary>
+    /// <param name="method">The calculation method used to determine the Fajr, Isha, and Maghrib parameters.</param>
+    /// <param name="school">The juristic school used to determine the Asr shadow factor.</param>
+    /// <param name="asrShadowFactor">An optional explicit Asr shadow factor overriding the one derived from <paramref name="school"/>.</param>
+    /// <param name="timeProvider">An optional time provider used to obtain the current date/time. Defaults to <see cref="TimeProvider.System"/>.</param>
     public PrayerTimes(
         PrayerCalculationMethods method = PrayerCalculationMethods.DEFAULT,
         Schools school = Schools.DEFAULT,
@@ -50,7 +69,7 @@ public partial class PrayerTimes
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
 
-        SetPrayerCalculationMethods();
+        SetPrayerCalculationMethodList();
 
         _method = method;
         _school = school;
@@ -82,18 +101,21 @@ public partial class PrayerTimes
         }
     }
 
-    private void SetPrayerCalculationMethods()
+    private void SetPrayerCalculationMethodList()
     {
         CalculationMethodList = PrayerCalculation.PrayerCalculations;
-        CalculationMethodCodeList = PrayerCalculation.PrayerCalculationsCodes;
     }
 
+    /// <summary>Sets the calculation method used to determine the Fajr, Isha, and Maghrib parameters.</summary>
+    /// <param name="method">The calculation method to use.</param>
     public void SetMethod(PrayerCalculationMethods method = PrayerCalculationMethods.MWL)
     {
         _method = method;
         LoadSettings();
     }
 
+    /// <summary>Sets a custom calculation method, replacing the current <see cref="PrayerCalculationMethods.CUSTOM"/> entry.</summary>
+    /// <param name="method">The custom calculation method definition to use.</param>
     public void SetCustomMethod(PrayerCalculationMethod method)
     {
         SetMethod(PrayerCalculationMethods.CUSTOM);
@@ -101,36 +123,50 @@ public partial class PrayerTimes
         LoadSettings();
     }
 
+    /// <summary>Sets per-prayer time offsets, in minutes, applied after all other calculations.</summary>
+    /// <param name="offset">A dictionary mapping prayer time keys to their offset in minutes.</param>
     public void SetTuneTimeOffset(Dictionary<string, double> offset)
     {
         _tuneTimesOffset = offset;
     }
 
+    /// <summary>Sets the twilight color used to determine the Isha time under the Moonsighting calculation method.</summary>
+    /// <param name="shafaq">The twilight color to use.</param>
     public void SetShafaq(Shafaq shafaq)
     {
         _shafaq = shafaq;
     }
 
+    /// <summary>Sets the juristic school used to determine the Asr shadow factor.</summary>
+    /// <param name="school">The juristic school to use.</param>
     public void SetSchool(Schools school)
     {
         SetAsrJuristicMethod(school);
     }
 
+    /// <summary>Sets the juristic school used to determine the Asr shadow factor.</summary>
+    /// <param name="school">The juristic school to use.</param>
     public void SetAsrJuristicMethod(Schools school)
     {
         _school = school;
     }
 
+    /// <summary>Sets the method used to calculate the Islamic midnight time.</summary>
+    /// <param name="mode">The midnight calculation mode to use.</param>
     public void SetMidnightMode(MidnightModes mode = MidnightModes.STANDARD)
     {
         _midnightMode = mode;
     }
 
+    /// <summary>Sets the format used to render the calculated prayer times.</summary>
+    /// <param name="format">The time format to use.</param>
     public void SetTimeFormat(TimeFormats format = TimeFormats.DEFAULT)
     {
         _timeFormat = format;
     }
 
+    /// <summary>Sets the method used to adjust prayer times for high latitude locations.</summary>
+    /// <param name="method">The latitude adjustment method to use.</param>
     public void SetLatitudeAdjustmentMethod(LatitudeAdjustmentMethods method = LatitudeAdjustmentMethods.DEFAULT)
     {
         _latitudeAdjustmentMethod = method;
@@ -168,11 +204,23 @@ public partial class PrayerTimes
         return (int)_school;
     }
 
+    /// <summary>Converts a <see cref="DateTimeOffset"/> to its equivalent Julian date.</summary>
+    /// <param name="date">The date to convert.</param>
+    /// <returns>The equivalent Julian date.</returns>
     public static double ToJulianDate(DateTimeOffset date)
     {
         return date.DateTime.ToOADate() + 2415018.5;
     }
 
+    /// <summary>Calculates prayer times for the current date at the specified location.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the local time zone if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable Now(
         double latitude,
         double longitude,
@@ -185,6 +233,9 @@ public partial class PrayerTimes
         return GetTimes(latitude, longitude, _timeProvider.GetLocalNow(), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    /// <summary>Calculates prayer times for the current date using the specified inputs.</summary>
+    /// <param name="inputs">The location and formatting inputs.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable Now(PrayerTimesInputs inputs) =>
         GetTimes(
             inputs.Latitude,
@@ -196,6 +247,15 @@ public partial class PrayerTimes
             inputs.MidnightMode,
             inputs.Format);
 
+    /// <summary>Calculates prayer times for tomorrow's date at the specified location.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the local time zone if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable Tomorrow(
         double latitude,
         double longitude,
@@ -208,6 +268,9 @@ public partial class PrayerTimes
         return GetTimes(latitude, longitude, _timeProvider.GetLocalNow().AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    /// <summary>Calculates prayer times for tomorrow's date using the specified inputs.</summary>
+    /// <param name="inputs">The location and formatting inputs.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable Tomorrow(PrayerTimesInputs inputs) =>
         GetTimes(
             inputs.Latitude,
@@ -219,6 +282,16 @@ public partial class PrayerTimes
             inputs.MidnightMode,
             inputs.Format);
 
+    /// <summary>Calculates prayer times for the specified location and date.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="dateTime">The date for which prayer times should be calculated. Defaults to the current local date/time if not specified.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the offset of <paramref name="dateTime"/> if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable GetTimes(
         double latitude,
         double longitude,
@@ -243,6 +316,9 @@ public partial class PrayerTimes
         return ComputeTimes();
     }
 
+    /// <summary>Calculates prayer times using the specified inputs.</summary>
+    /// <param name="inputs">The location, date, and formatting inputs.</param>
+    /// <returns>A <see cref="Hashtable"/> mapping each prayer time key to its formatted value.</returns>
     public Hashtable GetTimes(PrayerTimesInputs inputs) =>
         GetTimes(
             inputs.Latitude,
@@ -254,6 +330,16 @@ public partial class PrayerTimes
             inputs.MidnightMode,
             inputs.Format);
 
+    /// <summary>Calculates prayer times for the specified location and date, returned as a strongly typed result.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="dateTime">The date for which prayer times should be calculated. Defaults to the current local date/time if not specified.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the offset of <paramref name="dateTime"/> if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult GetTimesResult(
         double latitude,
         double longitude,
@@ -268,6 +354,9 @@ public partial class PrayerTimes
         return ToPrayerTimesResult(times);
     }
 
+    /// <summary>Calculates prayer times using the specified inputs, returned as a strongly typed result.</summary>
+    /// <param name="inputs">The location, date, and formatting inputs.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult GetTimesResult(PrayerTimesInputs inputs) =>
         GetTimesResult(
             inputs.Latitude,
@@ -279,6 +368,15 @@ public partial class PrayerTimes
             inputs.MidnightMode,
             inputs.Format);
 
+    /// <summary>Calculates prayer times for the current date at the specified location, returned as a strongly typed result.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the local time zone if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult NowResult(
         double latitude,
         double longitude,
@@ -291,6 +389,9 @@ public partial class PrayerTimes
         return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow(), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    /// <summary>Calculates prayer times for the current date using the specified inputs, returned as a strongly typed result.</summary>
+    /// <param name="inputs">The location and formatting inputs.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult NowResult(PrayerTimesInputs inputs) =>
         GetTimesResult(
             inputs.Latitude,
@@ -302,6 +403,15 @@ public partial class PrayerTimes
             inputs.MidnightMode,
             inputs.Format);
 
+    /// <summary>Calculates prayer times for tomorrow's date at the specified location, returned as a strongly typed result.</summary>
+    /// <param name="latitude">The latitude of the location, in degrees.</param>
+    /// <param name="longitude">The longitude of the location, in degrees.</param>
+    /// <param name="timeZone">The time zone of the location. Defaults to the local time zone if not specified.</param>
+    /// <param name="elevation">The elevation of the location, in meters.</param>
+    /// <param name="latitudeAdjustmentMethod">The method used to adjust prayer times for high latitude locations.</param>
+    /// <param name="midnightMode">The method used to calculate the Islamic midnight time.</param>
+    /// <param name="format">The format used to render the calculated prayer times.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult TomorrowResult(
         double latitude,
         double longitude,
@@ -314,6 +424,9 @@ public partial class PrayerTimes
         return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow().AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
+    /// <summary>Calculates prayer times for tomorrow's date using the specified inputs, returned as a strongly typed result.</summary>
+    /// <param name="inputs">The location and formatting inputs.</param>
+    /// <returns>The calculated prayer times.</returns>
     public PrayerTimesResult TomorrowResult(PrayerTimesInputs inputs) =>
         GetTimesResult(
             inputs.Latitude,
@@ -432,7 +545,10 @@ public partial class PrayerTimes
         return $"{hour}:{twoDigitMinutes}" + string.Format("{0}", !string.IsNullOrEmpty(suffix) ? " " + suffix : string.Empty);
     }
 
-    public string TwoDigitsFormat(double num) => (num < 10) ? "0" + num : num + "";
+    /// <summary>Formats a number as a two-digit string, zero-padding values less than 10.</summary>
+    /// <param name="num">The number to format.</param>
+    /// <returns>The formatted, two-digit string.</returns>
+    private string TwoDigitsFormat(double num) => (num < 10) ? "0" + num : num + "";
     private Hashtable MoonsightingRecalculation(Hashtable times)
     {
         var fajrMS = new Fajr(_date.DateTime, _latitude);
@@ -447,9 +563,9 @@ public partial class PrayerTimes
         return times;
     }
 
-    private List<string> GetKeys(Hashtable times)
+    private static List<string> GetKeys(Hashtable times)
     {
-        List<string> keys = new List<string>();
+        List<string> keys = [];
         foreach (DictionaryEntry time in times)
             keys.Add(time.Key.ToString());
         return keys;
@@ -512,7 +628,7 @@ public partial class PrayerTimes
     private bool IsMin(string str) =>
         !string.IsNullOrEmpty(str) && str.IndexOf(MinSuffix, StringComparison.OrdinalIgnoreCase) > -1;
 
-    private double TimeDiff(double c1, double c2)
+    private static double TimeDiff(double c1, double c2)
     {
         return DMath.FixHour(c2 - c1); ;
     }
@@ -541,7 +657,10 @@ public partial class PrayerTimes
         };
     }
 
-    public Hashtable DayPortion(Hashtable times)
+    /// <summary>Converts each time value in the hashtable from hours to a fractional portion of the day.</summary>
+    /// <param name="times">A <see cref="Hashtable"/> mapping prayer time keys to values expressed in hours.</param>
+    /// <returns>The same <see cref="Hashtable"/>, with each value converted to a fraction of a day.</returns>
+    private static Hashtable DayPortion(Hashtable times)
     {
         List<string> keys = GetKeys(times);
         foreach (string key in keys)
@@ -567,7 +686,12 @@ public partial class PrayerTimes
         return noon + (direction == ClockwiseDirection ? -t : t);
     }
 
-    public double JulianDate(int year, int month, int day)
+    /// <summary>Computes the Julian date for the specified Gregorian calendar date.</summary>
+    /// <param name="year">The year.</param>
+    /// <param name="month">The month.</param>
+    /// <param name="day">The day.</param>
+    /// <returns>The equivalent Julian date.</returns>
+    private static double JulianDate(int year, int month, int day)
     {
         if (month <= 2)
         {
@@ -589,7 +713,10 @@ public partial class PrayerTimes
         return noon;
     }
 
-    public Sun SunPosition(double jd)
+    /// <summary>Computes the sun's declination and the equation of time for the given Julian date.</summary>
+    /// <param name="jd">The Julian date.</param>
+    /// <returns>A <see cref="Sun"/> instance describing the sun's position.</returns>
+    private static Sun SunPosition(double jd)
     {
         double D = jd - 2451545.0;
         double g = DMath.FixAngle(357.529 + 0.98560028 * D);
