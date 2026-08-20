@@ -25,7 +25,7 @@ public static class PrayerTimesExamples
         Hashtable times = prayerTimes.GetTimes(
             latitude: 51.5074,
             longitude: -0.1278,
-            dateTime: new DateTime(2024, 6, 15),
+            dateTime: new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             timeZone: TimeZoneInfo.Utc);
 
         PrintHashtable(times);
@@ -39,7 +39,7 @@ public static class PrayerTimesExamples
         PrayerTimesResult result = prayerTimes.GetTimesResult(
             latitude: 51.5074,
             longitude: -0.1278,
-            dateTime: new DateTime(2024, 6, 15),
+            dateTime: new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             timeZone: TimeZoneInfo.Utc);
 
         PrintResult(result);
@@ -76,7 +76,7 @@ public static class PrayerTimesExamples
         var inputs = new PrayerTimesInputs(
             Latitude: 21.3891,
             Longitude: 39.8579,
-            DateTime: new DateTime(2024, 6, 15),
+            DateTime: new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             TimeZone: TimeZoneInfo.Utc,
             Elevation: 300,
             LatitudeAdjustmentMethod: LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_ANGLE,
@@ -91,7 +91,7 @@ public static class PrayerTimesExamples
         Console.WriteLine("=== 12h vs 24h vs Float output ===");
 
         var prayerTimes = new PrayerTimes();
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
 
         PrayerTimesResult result12h = prayerTimes.GetTimesResult(
             51.5074, -0.1278, date, TimeZoneInfo.Utc, format: TimeFormats.TIME_FORMAT_12H);
@@ -125,7 +125,7 @@ public static class PrayerTimesExamples
         });
 
         PrayerTimesResult result = prayerTimes.GetTimesResult(
-            51.5074, -0.1278, new DateTime(2024, 6, 15), TimeZoneInfo.Utc);
+            51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), TimeZoneInfo.Utc);
 
         PrintResult(result);
     }

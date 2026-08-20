@@ -5,7 +5,7 @@ namespace PrayerTimesManager;
 public record PrayerTimesInputs(
     double Latitude,
     double Longitude,
-    DateTime? DateTime = null,
+    DateTimeOffset? DateTime = null,
     TimeZoneInfo? TimeZone = null,
     double? Elevation = null,
     LatitudeAdjustmentMethods LatitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,

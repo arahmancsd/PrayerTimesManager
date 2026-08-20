@@ -25,7 +25,7 @@ public partial class PrayerTimes
     private const string MinSuffix = "min";
     private const string ClockwiseDirection = "ccw";
 
-    private DateTime _date;
+    private DateTimeOffset _date;
     private PrayerCalculationMethods _method = PrayerCalculationMethods.MWL;
     private Schools _school = Schools.DEFAULT;
     private MidnightModes _midnightMode = MidnightModes.DEFAULT;
@@ -168,9 +168,9 @@ public partial class PrayerTimes
         return (int)_school;
     }
 
-    public static double ToJulianDate(DateTime date)
+    public static double ToJulianDate(DateTimeOffset date)
     {
-        return date.ToOADate() + 2415018.5;
+        return date.DateTime.ToOADate() + 2415018.5;
     }
 
     public Hashtable Now(
@@ -182,14 +182,14 @@ public partial class PrayerTimes
         MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
-        return GetTimes(latitude, longitude, _timeProvider.GetLocalNow().DateTime, timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+        return GetTimes(latitude, longitude, _timeProvider.GetLocalNow(), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
     public Hashtable Now(PrayerTimesInputs inputs) =>
         GetTimes(
             inputs.Latitude,
             inputs.Longitude,
-            _timeProvider.GetLocalNow().DateTime,
+            _timeProvider.GetLocalNow(),
             inputs.TimeZone,
             inputs.Elevation,
             inputs.LatitudeAdjustmentMethod,
@@ -205,14 +205,14 @@ public partial class PrayerTimes
         MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
-        return GetTimes(latitude, longitude, _timeProvider.GetLocalNow().DateTime.AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+        return GetTimes(latitude, longitude, _timeProvider.GetLocalNow().AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
     public Hashtable Tomorrow(PrayerTimesInputs inputs) =>
         GetTimes(
             inputs.Latitude,
             inputs.Longitude,
-            _timeProvider.GetLocalNow().DateTime.AddDays(1),
+            _timeProvider.GetLocalNow().AddDays(1),
             inputs.TimeZone,
             inputs.Elevation,
             inputs.LatitudeAdjustmentMethod,
@@ -222,7 +222,7 @@ public partial class PrayerTimes
     public Hashtable GetTimes(
         double latitude,
         double longitude,
-        DateTime? dateTime = null,
+        DateTimeOffset? dateTime = null,
         TimeZoneInfo? timeZone = null,
         double? elevation = null,
         LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
@@ -257,7 +257,7 @@ public partial class PrayerTimes
     public PrayerTimesResult GetTimesResult(
         double latitude,
         double longitude,
-        DateTime? dateTime = null,
+        DateTimeOffset? dateTime = null,
         TimeZoneInfo? timeZone = null,
         double? elevation = null,
         LatitudeAdjustmentMethods latitudeAdjustmentMethod = LatitudeAdjustmentMethods.DEFAULT,
@@ -288,14 +288,14 @@ public partial class PrayerTimes
         MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
-        return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow().DateTime, timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+        return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow(), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
     public PrayerTimesResult NowResult(PrayerTimesInputs inputs) =>
         GetTimesResult(
             inputs.Latitude,
             inputs.Longitude,
-            _timeProvider.GetLocalNow().DateTime,
+            _timeProvider.GetLocalNow(),
             inputs.TimeZone,
             inputs.Elevation,
             inputs.LatitudeAdjustmentMethod,
@@ -311,14 +311,14 @@ public partial class PrayerTimes
         MidnightModes midnightMode = MidnightModes.DEFAULT,
         TimeFormats format = TimeFormats.DEFAULT)
     {
-        return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow().DateTime.AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
+        return GetTimesResult(latitude, longitude, _timeProvider.GetLocalNow().AddDays(1), timeZone, elevation, latitudeAdjustmentMethod, midnightMode, format);
     }
 
     public PrayerTimesResult TomorrowResult(PrayerTimesInputs inputs) =>
         GetTimesResult(
             inputs.Latitude,
             inputs.Longitude,
-            _timeProvider.GetLocalNow().DateTime.AddDays(1),
+            _timeProvider.GetLocalNow().AddDays(1),
             inputs.TimeZone,
             inputs.Elevation,
             inputs.LatitudeAdjustmentMethod,
@@ -336,16 +336,21 @@ public partial class PrayerTimes
         times[ISHA]?.ToString() ?? INVALID_TIME,
         times[MIDNIGHT]?.ToString() ?? INVALID_TIME);
 
-    private void SetDate(DateTime? date)
+    private void SetDate(DateTimeOffset? date)
     {
-        _date = date ?? _timeProvider.GetLocalNow().DateTime;
+        _date = date ?? _timeProvider.GetLocalNow();
     }
 
     private void SetTimeZone(TimeZoneInfo? tz)
     {
-        var resolvedTimeZone = tz ?? _timeProvider.LocalTimeZone;
-        var offsetDate = _date.Kind == DateTimeKind.Utc ? _date : DateTime.SpecifyKind(_date, DateTimeKind.Local);
-        _timeZone = resolvedTimeZone.GetUtcOffset(offsetDate).TotalHours;
+        if (tz != null)
+        {
+            _timeZone = tz.GetUtcOffset(_date).TotalHours;
+        }
+        else
+        {
+            _timeZone = _date.Offset.TotalHours;
+        }
     }
 
     private Hashtable ComputeTimes()
@@ -430,13 +435,13 @@ public partial class PrayerTimes
     public string TwoDigitsFormat(double num) => (num < 10) ? "0" + num : num + "";
     private Hashtable MoonsightingRecalculation(Hashtable times)
     {
-        var fajrMS = new Fajr(_date, _latitude);
+        var fajrMS = new Fajr(_date.DateTime, _latitude);
         times[FAJR] = Convert.ToDouble(times[SUNRISE]) - (fajrMS.GetMinutesBeforeSunrise() / 60d);
 
         if (IsMin(_settings[IMSAK]))
             times[IMSAK] = Convert.ToDouble(times[FAJR]) - Evaluate(_settings[IMSAK]) / 60d;
 
-        var ishaMS = new Isha(_date, _latitude, _shafaq);
+        var ishaMS = new Isha(_date.DateTime, _latitude, _shafaq);
         times[ISHA] = Convert.ToDouble(times[SUNSET]) + (ishaMS.GetMinutesAfterSunset() / 60d);
 
         return times;

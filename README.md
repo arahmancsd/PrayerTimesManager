@@ -38,14 +38,13 @@ Install-Package PrayerTimesManager
 ```csharp
 using PrayerTimesManager;
 using PrayerTimesManager.Enums;
-using PrayersTimeManager.Enums;
 
 var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.STANDARD);
 
 PrayerTimesResult result = prayerTimes.GetTimesResult(
     latitude: 51.5074,
     longitude: -0.1278,
-    dateTime: new DateTime(2024, 6, 15),
+    dateTime: new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
     timeZone: TimeZoneInfo.Utc);
 
 Console.WriteLine($"Fajr:    {result.Fajr}");
@@ -71,7 +70,7 @@ PrayerTimesResult tomorrow = prayerTimes.TomorrowResult(latitude: 51.5074, longi
 var inputs = new PrayerTimesInputs(
     Latitude: 21.4225,
     Longitude: 39.8262,
-    DateTime: new DateTime(2024, 6, 15),
+    DateTime: new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
     TimeZone: TimeZoneInfo.Utc,
     Format: TimeFormats.TIME_FORMAT_24H);
 

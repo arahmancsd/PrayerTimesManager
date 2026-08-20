@@ -38,7 +38,7 @@ public class PrayerTimesTests
     [TestMethod]
     public void ToJulianDate_ReturnsExpectedValue()
     {
-        DateTime date = new(2000, 1, 1, 12, 0, 0);
+        DateTimeOffset date = new(2000, 1, 1, 12, 0, 0, TimeSpan.Zero);
         double julianDate = PrayerTimes.ToJulianDate(date);
 
         Assert.AreEqual(2451545.0, julianDate, 1e-6);
@@ -48,7 +48,7 @@ public class PrayerTimesTests
     public void GetTimes_ReturnsAllPrayerKeys()
     {
         var prayerTimes = new PrayerTimes();
-        Hashtable times = prayerTimes.GetTimes(51.5074, -0.1278, new DateTime(2024, 6, 15), Utc);
+        Hashtable times = prayerTimes.GetTimes(51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc);
 
         Assert.IsNotNull(times);
         Assert.IsTrue(times.ContainsKey(PrayerTimes.FAJR));
@@ -64,7 +64,7 @@ public class PrayerTimesTests
     public void GetTimes_DefaultFormat_Returns12HourStrings()
     {
         var prayerTimes = new PrayerTimes();
-        Hashtable times = prayerTimes.GetTimes(51.5074, -0.1278, new DateTime(2024, 6, 15), Utc);
+        Hashtable times = prayerTimes.GetTimes(51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc);
 
         string? fajr = times[PrayerTimes.FAJR]?.ToString();
         Assert.IsFalse(string.IsNullOrEmpty(fajr));
@@ -78,7 +78,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_24H);
 
@@ -94,7 +94,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -109,7 +109,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_ISO8601);
 
@@ -122,7 +122,7 @@ public class PrayerTimesTests
     [TestMethod]
     public void GetTimes_DifferentMethodsProduceDifferentResults()
     {
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
         var mwlTimes = new PrayerTimes(PrayerCalculationMethods.MWL).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
         var egyptTimes = new PrayerTimes(PrayerCalculationMethods.EGYPT).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -135,7 +135,7 @@ public class PrayerTimesTests
     [TestMethod]
     public void GetTimes_DifferentSchoolsChangeAsrTime()
     {
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
         var standardTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.STANDARD).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
         var hanafiTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.HANAFI).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -152,7 +152,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             latitudeAdjustmentMethod: LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_NONE);
 
@@ -166,7 +166,7 @@ public class PrayerTimesTests
         var jafariTimes = new PrayerTimes(PrayerCalculationMethods.JAFARI).GetTimes(
             35.6892,
             51.3890,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             midnightMode: MidnightModes.JAFARI,
             format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -174,7 +174,7 @@ public class PrayerTimesTests
         var standardTimes = new PrayerTimes(PrayerCalculationMethods.JAFARI).GetTimes(
             35.6892,
             51.3890,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             midnightMode: MidnightModes.STANDARD,
             format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -192,7 +192,7 @@ public class PrayerTimesTests
         Hashtable timesWithElevation = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             elevation: 100,
             format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -200,7 +200,7 @@ public class PrayerTimesTests
         Hashtable timesWithoutElevation = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -234,7 +234,7 @@ public class PrayerTimesTests
         Hashtable tunedTimes = prayerTimes.GetTimes(
             51.5074,
             -0.1278,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -244,8 +244,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void Now_ReturnsTimesForToday()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
 
         Hashtable nowTimes = new PrayerTimes(timeProvider: fake).Now(
             51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -260,8 +260,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void Tomorrow_ReturnsTimesForNextDay()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
 
         Hashtable tomorrowTimes = new PrayerTimes(timeProvider: fake).Tomorrow(
             51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -318,7 +318,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             -33.8688, // Sydney
             151.2093,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -336,7 +336,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             21.3891, // Mecca
             39.8579,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             format: TimeFormats.TIME_FORMAT_FLOAT);
 
@@ -354,7 +354,7 @@ public class PrayerTimesTests
         Hashtable times = prayerTimes.GetTimes(
             65.0, // High latitude in summer where -17° Isha is not reached naturally
             0.0,
-            new DateTime(2024, 6, 15),
+            new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero),
             Utc,
             latitudeAdjustmentMethod: LatitudeAdjustmentMethods.LATITUDE_ADJUSTMENT_METHOD_ANGLE,
             format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -373,7 +373,7 @@ public class PrayerTimesTests
     {
         var prayerTimes = new PrayerTimes();
         PrayerTimesResult result = prayerTimes.GetTimesResult(
-            51.5074, -0.1278, new DateTime(2024, 6, 15), Utc);
+            51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc);
 
         Assert.IsNotNull(result);
         Assert.IsFalse(string.IsNullOrEmpty(result.Imsak));
@@ -391,7 +391,7 @@ public class PrayerTimesTests
     public void GetTimesResult_FloatFormat_MatchesHashtableOutput()
     {
         var prayerTimes = new PrayerTimes();
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
 
         Hashtable hashtable = prayerTimes.GetTimes(
             51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -413,8 +413,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void NowResult_ReturnsTimesForToday()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
 
         PrayerTimesResult result = new PrayerTimes(timeProvider: fake).NowResult(
             51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -429,8 +429,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void TomorrowResult_ReturnsTimesForNextDay()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
 
         PrayerTimesResult result = new PrayerTimes(timeProvider: fake).TomorrowResult(
             51.5074, -0.1278, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
@@ -446,7 +446,7 @@ public class PrayerTimesTests
     public void GetTimes_WithInputsRecord_MatchesExpandedParameters()
     {
         var prayerTimes = new PrayerTimes();
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
         var inputs = new PrayerTimesInputs(
             Latitude: 51.5074,
             Longitude: -0.1278,
@@ -466,7 +466,7 @@ public class PrayerTimesTests
     public void GetTimesResult_WithInputsRecord_MatchesExpandedParameters()
     {
         var prayerTimes = new PrayerTimes();
-        DateTime date = new(2024, 6, 15);
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
         var inputs = new PrayerTimesInputs(
             Latitude: 51.5074,
             Longitude: -0.1278,
@@ -485,8 +485,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void Now_WithInputsRecord_ReturnsTimesForToday()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
         var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc, Format: TimeFormats.TIME_FORMAT_FLOAT);
 
         Hashtable result = new PrayerTimes(timeProvider: fake).Now(inputs);
@@ -501,8 +501,8 @@ public class PrayerTimesTests
     [TestMethod]
     public void NowResult_WithInputsRecord_ReturnsTimesForToday()
     {
-        DateTime today = new(2024, 6, 15, 12, 0, 0, DateTimeKind.Utc);
-        var fake = new FakeTimeProvider(today.ToUniversalTime());
+        DateTimeOffset today = new(2024, 6, 15, 12, 0, 0, TimeSpan.Zero);
+        var fake = new FakeTimeProvider(today);
         var inputs = new PrayerTimesInputs(51.5074, -0.1278, TimeZone: Utc, Format: TimeFormats.TIME_FORMAT_FLOAT);
 
         PrayerTimesResult result = new PrayerTimes(timeProvider: fake).NowResult(inputs);
