@@ -58,7 +58,7 @@ public partial class PrayerTimes
     private double _latitude;
     private double _longitude;
     private double _elevation;
-    private readonly int? _asrShadowFactor;
+    private readonly double? _asrShadowFactor;
     private Dictionary<string, string> _settings = [];
     private double _timeZone;
     private Dictionary<string, double> _tuneTimesOffset = [];
@@ -74,7 +74,7 @@ public partial class PrayerTimes
     public PrayerTimes(
         PrayerCalculationMethods method = PrayerCalculationMethods.DEFAULT,
         Schools school = Schools.DEFAULT,
-        int? asrShadowFactor = null,
+        double? asrShadowFactor = null,
         TimeProvider? timeProvider = null)
     {
         _timeProvider = timeProvider ?? TimeProvider.System;
@@ -249,11 +249,17 @@ public partial class PrayerTimes
         return 0.833 + angle;
     }
 
-    private int AsrFactor()
+    private double AsrFactor()
     {
         if (_asrShadowFactor.HasValue)
             return _asrShadowFactor.Value;
-        return (int)_school;
+
+        return _school switch
+        {
+            Schools.HANAFI => 2d,
+            Schools.JAFARI => 4d / 7d,
+            _ => 1d,
+        };
     }
 
     /// <summary>Converts a <see cref="DateTimeOffset"/> to its equivalent Julian date.</summary>
@@ -785,7 +791,7 @@ public partial class PrayerTimes
         return new Sun() { Declination = dec1, Equation = eqt };
     }
 
-    private double AsrTime(int factor, double time)
+    private double AsrTime(double factor, double time)
     {
         double julianDate = JulianDate(_date.Year, _date.Month, _date.Day) - _longitude / (15 * 24);
         double dec1 = SunPosition(julianDate + time).Declination;

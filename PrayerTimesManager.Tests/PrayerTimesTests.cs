@@ -148,6 +148,22 @@ public class PrayerTimesTests
     }
 
     [TestMethod]
+    public void GetTimes_JafariSchool_UsesFourSeventhsShadowFactor()
+    {
+        DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
+        var standardTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.STANDARD).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        var hanafiTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.HANAFI).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+        var jafariTimes = new PrayerTimes(PrayerCalculationMethods.MWL, Schools.JAFARI).GetTimes(51.5074, -0.1278, date, Utc, format: TimeFormats.TIME_FORMAT_FLOAT);
+
+        double standardAsr = Convert.ToDouble(standardTimes[PrayerTimes.ASR]);
+        double hanafiAsr = Convert.ToDouble(hanafiTimes[PrayerTimes.ASR]);
+        double jafariAsr = Convert.ToDouble(jafariTimes[PrayerTimes.ASR]);
+
+        Assert.IsTrue(hanafiAsr > standardAsr, "Hanafi Asr should occur later than standard Asr.");
+        Assert.IsTrue(standardAsr > jafariAsr, "Ja'fari Asr (4/7 factor) should occur earlier than standard Asr.");
+    }
+
+    [TestMethod]
     public void GetTimes_LatitudeAdjustmentMethodNone_DoesNotThrow()
     {
         var prayerTimes = new PrayerTimes();
