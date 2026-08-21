@@ -465,10 +465,9 @@ public class PrayerTimesTests
     }
 
     [TestMethod]
-    public void SetMoonsightingMaghribType_Shia_AppliesShiaMaghribOffset()
+    public void GetTimes_MoonsightingMethod_JafariSchool_UsesShiaMaghribOffset()
     {
-        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
-        prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
+        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING, Schools.JAFARI);
 
         Hashtable times = prayerTimes.GetTimes(
             51.5074, -0.1278, new DateTimeOffset(2024, 6, 15, 0, 0, 0, TimeSpan.Zero), Utc, format: TimeFormats.TIME_FORMAT_FLOAT);

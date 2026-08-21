@@ -133,22 +133,22 @@ public static class PrayerTimesExamples
 
     private static void MoonsightingExample()
     {
-        Console.WriteLine("=== Moonsighting.com method (default Sunni vs Shi'a Maghrib offset) ===");
+        Console.WriteLine("=== Moonsighting.com method (school-driven Maghrib & Shafaq defaults) ===");
 
-        var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
         DateTimeOffset date = new(2024, 6, 15, 0, 0, 0, TimeSpan.Zero);
 
-        // The Moonsighting method automatically applies a default 5-minute Zuhr offset and a
-        // 3-minute (Sunni) Maghrib offset. These are surfaced through TuneTimeOffsets, alongside
-        // any offsets set via SetTuneTimeOffset.
-        PrayerTimesResult sunniResult = prayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
-        Console.WriteLine($"Active tune offsets: {string.Join(", ", prayerTimes.TuneTimeOffsets.Select(kv => $"{kv.Key}={kv.Value}min"))}");
-        Console.WriteLine($"Dhuhr:   {sunniResult.Dhuhr}");
-        Console.WriteLine($"Maghrib (Sunni): {sunniResult.Maghrib}");
+        // The Moonsighting method derives the Maghrib offset and Isha Shafaq from the school.
+        // Standard (Shafi'i/Maliki/Hanbali) uses a 3-minute Sunni Maghrib offset and General Shafaq.
+        var standardPrayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING, Schools.STANDARD);
+        PrayerTimesResult standardResult = standardPrayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
+        Console.WriteLine($"Active tune offsets: {string.Join(", ", standardPrayerTimes.TuneTimeOffsets.Select(kv => $"{kv.Key}={kv.Value}min"))}");
+        Console.WriteLine($"Dhuhr:   {standardResult.Dhuhr}");
+        Console.WriteLine($"Maghrib (Standard): {standardResult.Maghrib}");
 
-        prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
-        PrayerTimesResult shiaResult = prayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
-        Console.WriteLine($"Maghrib (Shi'a): {shiaResult.Maghrib}");
+        // Ja'fari (Shi'a) uses a 17-minute Shi'a Maghrib offset and Shafaq Ahmer.
+        var jafariPrayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING, Schools.JAFARI);
+        PrayerTimesResult jafariResult = jafariPrayerTimes.GetTimesResult(51.5074, -0.1278, date, TimeZoneInfo.Utc);
+        Console.WriteLine($"Maghrib (Ja'fari): {jafariResult.Maghrib}");
     }
 
     private static void PrintHashtable(Hashtable times)

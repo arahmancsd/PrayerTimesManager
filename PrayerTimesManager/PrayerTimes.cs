@@ -53,7 +53,6 @@ public partial class PrayerTimes
     private MidnightModes _midnightMode = MidnightModes.DEFAULT;
     private LatitudeAdjustmentMethods _latitudeAdjustmentMethod;
     private Shafaq _shafaq = Isha.shafaq; // Only valid for METHOD_MOONSIGHTING
-    private MoonsightingMaghribType _moonsightingMaghribType = MoonsightingMaghribType.DEFAULT; // Only valid for METHOD_MOONSIGHTING
     private TimeFormats _timeFormat;
     private double _latitude;
     private double _longitude;
@@ -111,15 +110,32 @@ public partial class PrayerTimes
         }
 
         if (_method == PrayerCalculationMethods.MOONSIGHTING)
-            ApplyMoonsightingTuneOffsets();
+            ConfigureMoonsightingDefaults();
         else
             ClearAutoTuneOffsets();
     }
 
-    private void ApplyMoonsightingTuneOffsets()
+    private void ConfigureMoonsightingDefaults()
     {
-        SetAutoTuneOffset(ZHUHR, MoonsightingOffsets.ZuhrOffsetMinutes);
-        SetAutoTuneOffset(MAGHRIB, MoonsightingOffsets.GetMaghribOffsetMinutes(_moonsightingMaghribType));
+        _shafaq = _school switch
+        {
+            Schools.HANAFI => Shafaq.SHAFAQ_ABYAD,
+            Schools.JAFARI => Shafaq.SHAFAQ_AHMER,
+            _ => Shafaq.SHAFAQ_GENERAL
+        };
+
+        var maghribType = _school == Schools.JAFARI ? MoonsightingMaghribType.SHIA : MoonsightingMaghribType.SUNNI;
+
+        ApplyAutoTuneOffset(ZHUHR, MoonsightingOffsets.ZuhrOffsetMinutes);
+        ApplyAutoTuneOffset(MAGHRIB, MoonsightingOffsets.GetMaghribOffsetMinutes(maghribType));
+    }
+
+    private void ApplyAutoTuneOffset(string key, double minutes)
+    {
+        if (_tuneTimesOffset.ContainsKey(key) && !_autoTunedOffsetKeys.Contains(key))
+            return;
+
+        SetAutoTuneOffset(key, minutes);
     }
 
     private void SetAutoTuneOffset(string key, double minutes)
@@ -172,23 +188,6 @@ public partial class PrayerTimes
         }
     }
 
-    /// <summary>Sets the twilight color used to determine the Isha time under the Moonsighting calculation method.</summary>
-    /// <param name="shafaq">The twilight color to use.</param>
-    public void SetShafaq(Shafaq shafaq)
-    {
-        _shafaq = shafaq;
-    }
-
-    /// <summary>Sets the Maghrib sunset-offset convention used under the Moonsighting calculation method.</summary>
-    /// <param name="maghribType">The Maghrib convention to use.</param>
-    public void SetMoonsightingMaghribType(MoonsightingMaghribType maghribType)
-    {
-        _moonsightingMaghribType = maghribType;
-
-        if (_method == PrayerCalculationMethods.MOONSIGHTING)
-            SetAutoTuneOffset(MAGHRIB, MoonsightingOffsets.GetMaghribOffsetMinutes(_moonsightingMaghribType));
-    }
-
     /// <summary>Sets the juristic school used to determine the Asr shadow factor.</summary>
     /// <param name="school">The juristic school to use.</param>
     public void SetSchool(Schools school)
@@ -201,6 +200,9 @@ public partial class PrayerTimes
     public void SetAsrJuristicMethod(Schools school)
     {
         _school = school;
+
+        if (_method == PrayerCalculationMethods.MOONSIGHTING)
+            ConfigureMoonsightingDefaults();
     }
 
     /// <summary>Sets the method used to calculate the Islamic midnight time.</summary>

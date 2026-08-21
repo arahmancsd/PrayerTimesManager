@@ -1,4 +1,8 @@
-﻿namespace PrayerTimesManager;
+﻿using System.Runtime.CompilerServices;
+
+[assembly: InternalsVisibleTo("PrayerTimesManager.Tests")]
+
+namespace PrayerTimesManager;
 
 /// <summary>
 /// Base class implementing the Moonsighting Committee Worldwide seasonal adjustment method
@@ -194,6 +198,6 @@ public static class MoonsightingOffsets
     /// <summary>Gets the Maghrib offset, in minutes, for the specified <see cref="MoonsightingMaghribType"/>.</summary>
     /// <param name="maghribType">The Maghrib convention.</param>
     /// <returns>The offset, in minutes, after theoretical sunset.</returns>
-    public static double GetMaghribOffsetMinutes(MoonsightingMaghribType maghribType) =>
+    internal static double GetMaghribOffsetMinutes(MoonsightingMaghribType maghribType) =>
         maghribType == MoonsightingMaghribType.SHIA ? ShiaMaghribOffsetMinutes : SunniMaghribOffsetMinutes;
 }

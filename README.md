@@ -129,20 +129,25 @@ The `MOONSIGHTING` method (Moonsighting Committee Worldwide) automatically appli
 - **Dhuhr**: 5 minutes after zenith
 - **Maghrib**: 3 minutes after theoretical sunset for the Sunni convention, or 17 minutes for the Shi'a convention
 
+The Maghrib offset and the Isha twilight (`Shafaq`) are chosen automatically based on the selected `School`:
+
+| School | Maghrib offset | Isha Shafaq |
+| --- | --- | --- |
+| `STANDARD` (Shafi'i, Maliki, Hanbali) | 3 minutes (Sunni) | General |
+| `HANAFI` | 3 minutes (Sunni) | Abyad (whiteness) |
+| `JAFARI` | 17 minutes (Shi'a) | Ahmer (redness) |
+
 These defaults are applied via the same tune-offset mechanism as `SetTuneTimeOffset`, and are exposed through the read-only `TuneTimeOffsets` property:
 
 ```csharp
-var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING);
+var prayerTimes = new PrayerTimes(PrayerCalculationMethods.MOONSIGHTING, Schools.JAFARI);
 
-// Inspect the currently active offsets (Dhuhr = 5, Maghrib = 3 by default)
+// Inspect the currently active offsets (Dhuhr = 5, Maghrib = 17 for Ja'fari)
 foreach (var (key, minutes) in prayerTimes.TuneTimeOffsets)
     Console.WriteLine($"{key}: {minutes} min");
-
-// Switch to the Shi'a Maghrib convention (17 minutes after sunset)
-prayerTimes.SetMoonsightingMaghribType(MoonsightingMaghribType.SHIA);
 ```
 
-You can also override either default directly with `SetTuneTimeOffset`; explicit values you set always take precedence over the built-in defaults:
+You can still override either default directly with `SetTuneTimeOffset`; explicit values you set always take precedence over the built-in defaults:
 
 ```csharp
 prayerTimes.SetTuneTimeOffset(new Dictionary<string, double>
